@@ -49,7 +49,7 @@ small.note{color:var(--dim);display:block;margin-top:12px}
 <body>
 <div id="app">
  <header><div id="date"></div><div id="points"></div>
-  <div id="speed"><button data-s="0">멈춤</button><button data-s="1">보통</button><button data-s="3">빠르게</button></div></header>
+  <div id="speed"><button data-s="0">멈춤</button><button data-s="3">보통</button><button data-s="6">빠르게</button></div></header>
  <div id="gauges">
   <div class="g">AI 퍼짐 <b id="vA"></b><div class="bar"><u id="tA" class="t"></u><i id="bA" style="background:var(--ai)"></i></div><div class="tl"><span id="lA"></span></div></div>
   <div class="g">경제 <b id="vE"></b><div class="bar"><u id="tE" class="t"></u><i id="bE" style="background:var(--gold)"></i></div><div class="tl"><span id="lE"></span></div></div>
@@ -156,10 +156,10 @@ const ECHO=[
  ['AI 안전 정상회의',1,2032,'2023년의 빈 성명, 아무도 약속을 지키지 않았다',s=>{s.boost=.1;s.boostT=24}]
 ];
 function apply(ev,i){const c=ev.a[i];c[2](S);S.eco=clamp(S.eco);S.unrest=clamp(S.unrest);S.ch[ev.t]=i;log(`${ev.t}: ${c[0]}`)}
-function echoes(){ECHO.forEach((e,k)=>{if(S.ch[e[0]]===e[1]&&S.y>=e[2]&&!S.echo.includes(k)){S.echo.push(k);e[4](S);S.eco=clamp(S.eco);recalc();say(e[3]);S.back.push(e[3]);call(Math.floor(R(0,REGIONS.length)),e[3])}})}
+function echoes(){ECHO.forEach((e,k)=>{if(S.ch[e[0]]===e[1]&&S.y>=e[2]&&!S.echo.includes(k)){S.echo.push(k);e[4](S);if(!window.AUTO)SFX.echo();S.eco=clamp(S.eco);recalc();say(e[3]);S.back.push(e[3]);call(Math.floor(R(0,REGIONS.length)),e[3])}})}
 function title(){const a=world(),e=S.eco;return a<30&&e<45?'브레이크 장인':a>60&&e>60?'가속 페달 신봉자':has('i3')?'기본소득 대통령':S.ch['전쟁과 드론']===1?'안보 매파':a<=50&&e>=50?'줄타기 달인':'우왕좌왕 지도자'}
 const CARDS=[['긴급 제동','2년간 AI 느리게',6,s=>{s.boost=-.3;s.boostT=24}],['경기 살리기','경제 +5, 나라빚 +8',6,s=>{s.eco=clamp(s.eco+5);s.debt+=8}],['민심 달래기','불만 −12',4,s=>{s.unrest=clamp(s.unrest-12)}]];
-function card(i){const c=CARDS[i];if(over||S.pts<c[2])return;S.pts-=c[2];c[3](S);say(`긴급 명령: ${c[0]}`);hud()}
+function card(i){const c=CARDS[i];if(over||S.pts<c[2])return;S.pts-=c[2];c[3](S);SFX.card();say(`긴급 명령: ${c[0]}`);hud()}
 function forecast(){const w=world(),h=S.hist;if(h.length<12||w<8)return'';const v=w-h[h.length-12];if(v<=.05)return'';const y=S.y+(85-w)/v;return y>=2040?'':Math.floor(y)}
 function take(id){const n=NODES.find(x=>x.id===id);if(has(id)||S.lockd.includes(id))return;S.own.push(id);S.at[id]=S.y;if(n.lock)S.lockd.push(n.lock);recalc();say(`인류 대표, <b>${n.t}</b> 시행`)}
 const HISTORY=[[2010,3,'음성 인식이 조금 좋아졌다. 아무도 관심 없다.'],[2011,2,'AI가 미국 퀴즈쇼에서 인간 챔피언들을 이겼다.'],[2012,6,'연구팀, AI가 유튜브 영상만 보고 고양이를 알아봤다고 발표.'],[2014,6,'“AI가 만든 가짜 사진” 기술(GAN) 논문 화제.'],[2017,6,'연구자들, 논문 “Attention Is All You Need” 발표. 지금의 챗봇이 여기서 나온다.'],[2019,2,'글 쓰는 AI 공개. “악용이 걱정돼 전체 공개는 미룬다.”'],[2020,11,'AI가 단백질 구조 예측의 난제에 큰 진전을 냈다.'],[2022,8,'AI로 만든 그림이 미국 지역 미술대회 디지털 부문 1위. 논란 폭발.'],[2022,11,'대화형 챗봇 출시. 두 달 만에 1억 명이 썼다는 추정.'],[2023,3,'전문가들 공개서한 “거대 AI 실험을 6개월 멈추자.”'],[2023,10,'미국 대통령, AI 안전 행정명령 서명.'],[2024,5,'서울에서 AI 정상회의 개최.'],[2024,10,'노벨 물리학상·화학상이 AI 연구자들에게 돌아갔다.'],[2025,1,'중국 스타트업의 저비용 AI 공개. 미국 반도체주 급락.'],[2026,1,'한국 AI 기본법 시행.']];
@@ -192,6 +192,10 @@ const FUTURE=[
  s=>has('k3')&&'신약·소재 기대감에 바이오주 급등'
 ];
 const FACTION=['기술 낙관파','보호무역파','노동파','중도 실용파'];
+let AC=null,beat=0;
+function initAudio(){if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();AC.resume()}
+function tone(f,d=.15,v=.1,type='sine',at=0,to=0){if(!AC||window.AUTO)return;const t=AC.currentTime+at,o=AC.createOscillator(),a=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(to)o.frequency.exponentialRampToValueAtTime(to,t+d);a.gain.setValueAtTime(0,t);a.gain.linearRampToValueAtTime(v,t+.01);a.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(a).connect(AC.destination);o.start(t);o.stop(t+d+.02)}
+const SFX={coin:()=>{tone(880,.08,.08);tone(1320,.14,.08,'sine',.07)},card:()=>{tone(220,.35,.12,'sawtooth',0,660);tone(660,.3,.07,'triangle',.25)},event:()=>{tone(392,.2,.09,'triangle');tone(523,.3,.09,'triangle',.16)},pick:()=>tone(600,.08,.07,'triangle'),news:()=>tone(1046,.06,.035),echo:()=>{tone(330,.5,.09,'triangle');tone(247,.7,.09,'triangle',.3)},alarm:()=>[0,.32,.64].forEach(t=>tone(740,.24,.11,'square',t,520)),win:()=>[523,659,784,1046].forEach((f,i)=>tone(f,.45,.1,'triangle',i*.17)),lose:()=>[392,330,262,196].forEach((f,i)=>tone(f,.6,.1,'sawtooth',i*.25))};
 let S,speed=0,acc=0,bubbles=[],dots=[],over=false,diff=60,home='한국';
 const R=(a,b)=>a+Math.random()*(b-a),clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
 const has=id=>S.own.includes(id),world=()=>REGIONS.reduce((s,r)=>s+r.ai*r.w,0);
@@ -222,6 +226,7 @@ function spreadNews(){REGIONS.forEach((r,i)=>{
  const k=ms.filter(m=>r.ai>=m[0]).length;if(k>(r.ms||0)){r.ms=k;call(i,ms[k-1][1])}
 })}
 function tick(){
+ const hb=world();if(hb>35&&!window.AUTO&&++beat>=Math.max(3,Math.round(12-hb/8))){beat=0;tone(60,.18,.16);tone(52,.2,.12,'sine',.16)}
  S.mt=(S.mt||0)+1;S.mn=S.mn||1;
  S.mn++;if(S.mn>12){S.mn=1;S.y++;S.pts+=2+S.m.pts}
  const y=S.y+S.mn/12,g=y<2016?.05:y<2022?.15:y<2030?.31:.3;
@@ -231,7 +236,7 @@ function tick(){
  REGIONS.forEach((r,i)=>{if(r.ai>0){r.ai=clamp(r.ai+g*mult*(1+r.ai/50)*R(.6,1.4));if(r.ai>12)LINKS[i].forEach(j=>{if(!REGIONS[j].ai&&Math.random()<.07)REGIONS[j].ai=.6})}});
  spreadNews();
  const w=world();S.hist.push(w);
- [25,50,70].forEach((v,i)=>{if(w>=v&&S.alarm<=i){S.alarm=i+1;S.flash=1;say(`경고: 세계의 ${v}%에 AI가 퍼졌습니다`)}});
+ [25,50,70].forEach((v,i)=>{if(w>=v&&S.alarm<=i){S.alarm=i+1;S.flash=1;if(!window.AUTO)SFX.alarm();say(`경고: 세계의 ${v}%에 AI가 퍼졌습니다`)}});
  S.eco=clamp(S.eco+.06+w*.0009+S.m.eco-(S.unrest>70?.12:0)-(S.debt>110?.08:0));
  const tight=Math.max(0,-S.m.spread-.35);
  if(S.y>=2022)S.eco=clamp(S.eco-tight*.06);
@@ -266,17 +271,17 @@ function elections(){
 function log(t){if(S.log.length<14)S.log.push(`${S.y} ${t}`)}
 function bubble(g){const a=REGIONS.filter(x=>x.ai>0);if(!a.length)return;const r=a[Math.floor(R(0,a.length))],e=r.p[0];bubbles.push({x:e[0]+R(-e[2],e[2])*.6,y:e[1]+R(-e[3],e[3])*.6,life:7,v:g?4:2,gold:!!g})}
 let headline='';
-function say(t){headline=t.replace(/<[^>]+>/g,'')}
+function say(t){if(!window.AUTO&&speed)SFX.news();headline=t.replace(/<[^>]+>/g,'')}
 const price=n=>Math.ceil(n.c*S.cost*(S.costT>0?1.3:1)*(n.id==='s4'?S.pactX:1));
 function state(n){if(has(n.id))return'have';if(S.lockd.includes(n.id))return'locked';return'open'}
 function buy(id){const n=NODES.find(x=>x.id===id);if(state(n)!=='open'||S.pts<price(n))return;S.pts-=price(n);S.own.push(id);S.at[id]=S.y;if(n.lock)S.lockd.push(n.lock);recalc();say(`인류 대표, <b>${n.t}</b> 시행`);log(n.t+' 시행');hud();if(FIELD)openField(FIELD)}
 let FIELD=null,prev=1;
 function pause(){if(speed){prev=speed}speed=0}
 function layer(h){document.getElementById('box').innerHTML=h;document.getElementById('layer').classList.add('on')}
-function closeL(){document.getElementById('layer').classList.remove('on');FIELD=null;speed=prev||1;hud()}
+function closeL(){document.getElementById('layer').classList.remove('on');FIELD=null;speed=prev||3;hud()}
 function openField(f){pause();FIELD=f;layer(`<h2>${f} <span style="float:right;color:var(--gold)">● ${S.pts}</span></h2>`+TREE[f].map(n=>{const st=state(n),p=price(n);return`<button class="node ${st==='have'?'have':''}" ${st==='open'&&S.pts>=p?'':st==='have'?'':'disabled'} onclick="buy('${n.id}')"><em>${st==='have'?'시행 중':st==='locked'?'잠김':'● '+p}</em>${n.t}<small>${n.d}${st==='locked'?' · 반대 정책을 골라 닫힘':''}</small></button>`}).join('')+`<br><button onclick="closeL()">닫기</button>`)}
-function openEvent(ev){pause();window.EV=ev;layer(`<h2>${ev.t}</h2><p>${ev.y}년. ${ev.d}</p>`+ev.a.map((c,i)=>`<button class="choice" onclick="choose(${i})">${c[0]}<small>${c[1]}</small></button>`).join(''))}
-function choose(i){apply(EV,i);closeL()}
+function openEvent(ev){pause();SFX.event();window.EV=ev;layer(`<h2>${ev.t}</h2><p>${ev.y}년. ${ev.d}</p>`+ev.a.map((c,i)=>`<button class="choice" onclick="choose(${i})">${c[0]}<small>${c[1]}</small></button>`).join(''))}
+function choose(i){SFX.pick();apply(EV,i);closeL()}
 
 const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H,sc,ox,oy;
 function size(){const b=cv.parentElement.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);W=b.width;H=b.height;cv.width=W*d;cv.height=H*d;g.setTransform(d,0,0,d,0,0);sc=Math.min(W/1000,(H-56)/460);ox=(W-1000*sc)/2;oy=56+(H-56-460*sc)/2}
@@ -297,7 +302,7 @@ function draw(){
   const tx=ox+e[0]*sc;g.beginPath();g.moveTo(tx-6,y);g.lineTo(tx+6,y);g.lineTo(tx,y+8);g.fill();
   g.fillStyle='#22283a';g.textAlign='center';g.fillText(c.t,x,y-7);g.globalAlpha=1});
 }
-cv.addEventListener('click',e=>{const b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;for(let i=0;i<bubbles.length;i++){const q=bubbles[i];if(Math.hypot(ox+q.x*sc-x,oy+q.y*sc-y)<26){S.pts+=q.v;bubbles.splice(i,1);hud();return}}});
+cv.addEventListener('click',e=>{const b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;for(let i=0;i<bubbles.length;i++){const q=bubbles[i];if(Math.hypot(ox+q.x*sc-x,oy+q.y*sc-y)<26){S.pts+=q.v;bubbles.splice(i,1);SFX.coin();hud();return}}});
 function hud(){
  document.getElementById('date').textContent=`${S.y}년 ${S.mn||1}월`;document.getElementById('points').textContent=`● ${S.pts}`;
  [['A',world()],['E',S.eco],['U',S.unrest]].forEach(([k,v])=>{document.getElementById('v'+k).textContent=Math.round(v)+'%';document.getElementById('b'+k).style.width=v+'%'});
@@ -319,7 +324,7 @@ const ENDS={
 };
 function end(k){
  over=true;speed=0;const w=Math.round(world()),[t,d]=ENDS[k],build=Object.keys(TREE).map(f=>[f,TREE[f].filter(n=>has(n.id)).length]).sort((a,b)=>b[1]-a[1])[0][0];
- window.LAST=k;if(window.AUTO)return;
+ window.LAST=k;if(window.AUTO)return;(k==='win'?SFX.win:SFX.lose)();
  const name=title(),share=`[${name}] ${home}에서 시작, ${build} 빌드로 ${S.y}년: ${t}. AI ${w}% · 경제 ${Math.round(S.eco)} · 불만 ${Math.round(S.unrest)}`;
  window.SHARE=share;
  layer(`<h1>${t}</h1><p>${d}</p><p><b>${share}</b></p>${S.back.length?`<p><b>그때의 선택이 돌아왔다</b><br>${S.back.join('<br>')}</p>`:''}<p style="font-size:13px">${S.log.join('<br>')}</p><button class="main" onclick="menu()">다시 2010년으로</button> <button onclick="navigator.clipboard&&navigator.clipboard.writeText(SHARE);this.textContent='복사됨'">결과 복사</button><small class="note">과거는 실제 사건을 각색했고, 미래와 수치는 게임 속 가상입니다. 예측이 아닙니다.</small>`);
@@ -330,7 +335,7 @@ function menu(){
  <div class="pick"><b>목표 경제</b><br>${[[50,'쉬움'],[60,'보통'],[70,'어려움']].map(([v,l])=>`<button class="${v===diff?'on':''}" onclick="diff=${v};menu()">${l} ${v}</button>`).join('')}<br><small style="color:var(--dim)">승리: AI 50 이하, 경제 ${diff} 이상, 불만 50 이하</small></div>
  <button class="main" onclick="start()">2010년 시작</button>`);
 }
-function start(){reset();document.getElementById('layer').classList.remove('on');speed=prev=1;say('2010년. 아무도 AI를 걱정하지 않습니다. 아직은.');hud()}
+function start(){reset();document.getElementById('layer').classList.remove('on');speed=prev=3;initAudio();say('2010년. 아무도 AI를 걱정하지 않습니다. 아직은.');hud()}
 let last=0;
 function loop(ts){const dt=Math.min(.1,(ts-last)/1000||0);last=ts;if(speed&&!over){acc+=dt*speed;if(acc>.5){acc=0;tick();hud()}bubbles.forEach(b=>b.life-=dt);bubbles=bubbles.filter(b=>b.life>0);calls.forEach(c=>c.life-=dt);calls=calls.filter(c=>c.life>0)}draw();requestAnimationFrame(loop)}
 addEventListener('resize',size);

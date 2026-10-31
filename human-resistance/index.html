@@ -170,7 +170,7 @@ const ECHO=[
  ['한국 AI 법 통과',0,2030,'시민 의회가 어려운 합의를 이끌었다',s=>{s.unrest-=6;s.eco+=3}],
  ['AI 안전 정상회의',1,2032,'2023년의 빈 성명, 아무도 약속을 지키지 않았다',s=>{s.boost=.1;s.boostT=24}]
 ];
-function apply(ev,i){const c=ev.a[i];c[2](S);S.eco=clamp(S.eco);S.unrest=clamp(S.unrest);S.ch[ev.t]=i;log(`${ev.t}: ${c[0]}`)}
+function apply(ev,i){const c=ev.a[i];slow(c[2]);S.eco=clamp(S.eco);S.unrest=clamp(S.unrest);S.ch[ev.t]=i;log(`${ev.t}: ${c[0]}`)}
 function echoes(){ECHO.forEach((e,k)=>{if(S.ch[e[0]]===e[1]&&S.y>=e[2]&&!S.echo.includes(k)){S.echo.push(k);e[4](S);if(!window.AUTO)SFX.echo();S.eco=clamp(S.eco);recalc();say(e[3]);S.back.push(e[3]);call(Math.floor(R(0,REGIONS.length)),e[3])}})}
 function title(){const a=world(),e=S.eco;return a<30&&e<45?'브레이크 장인':a>60&&e>60?'가속 페달 신봉자':has('i3')?'기본소득 대통령':S.ch['전쟁과 드론']===1?'안보 매파':a<=50&&e>=50?'줄타기 달인':'우왕좌왕 지도자'}
 /* 쓰면 새 카드가 나온다. 좋은 효과엔 대가가 붙는다 */
@@ -186,8 +186,11 @@ const CARDS=[
  ['청년 지원금','😡⬇ 나라빚⬆',3,s=>{s.unrest-=8;s.debt+=10}],
  ['사람 직원 보호법','😡⬇ 🤖⬇ 💰⬇',5,s=>{s.unrest-=6;s.boost=-.1;s.boostT=12;s.eco-=2}]
 ];
+/* 정책 효과는 6개월 뒤부터 2년에 걸쳐 나타난다 */
+function slow(fn){const b=[S.eco,S.unrest,S.debt,S.boost,S.boostT];fn(S);const p={wait:6,left:24,eco:(S.eco-b[0])/24,unrest:(S.unrest-b[1])/24,debt:(S.debt-b[2])/24,b:S.boost!==b[3]?[S.boost,S.boostT]:null};S.eco=b[0];S.unrest=b[1];S.debt=b[2];S.boost=b[3];S.boostT=b[4];S.pend.push(p)}
+function runPend(){S.pend.forEach(p=>{if(p.wait>0){if(!--p.wait&&p.b){S.boost=p.b[0];S.boostT=p.b[1]}return}S.eco=clamp(S.eco+p.eco);S.unrest=clamp(S.unrest+p.unrest);S.debt+=p.debt;p.left--});S.pend=S.pend.filter(p=>p.left>0)}
 function deal(){let k;do{k=Math.floor(R(0,CARDS.length))}while(S.hand.includes(k));return k}
-function card(i){const c=CARDS[S.hand[i]];if(over||S.pts<c[2])return;S.pts-=c[2];c[3](S);S.eco=clamp(S.eco);S.unrest=clamp(S.unrest);S.hand[i]=deal();SFX.card();say(`긴급 명령: ${c[0]}`);hud()}
+function card(i){const c=CARDS[S.hand[i]];if(over||S.pts<c[2])return;S.pts-=c[2];slow(c[3]);S.hand[i]=deal();SFX.card();say(`${c[0]} 시행. 효과는 몇 년에 걸쳐 나타납니다`);hud()}
 function forecast(){const w=world(),h=S.hist;if(h.length<12||w<8)return'';const v=w-h[h.length-12];if(v<=.05)return'';const y=S.y+(85-w)/v;return y>=2040?'':Math.floor(y)}
 function take(id){const n=NODES.find(x=>x.id===id);if(has(id)||S.lockd.includes(id))return;S.own.push(id);S.at[id]=S.y;if(n.lock)S.lockd.push(n.lock);recalc();say(`인류 대표, <b>${n.t}</b> 시행`)}
 const HISTORY=[[2010,3,'음성 인식이 조금 좋아졌다. 아무도 관심 없다.'],[2011,2,'AI가 미국 퀴즈쇼에서 인간 챔피언들을 이겼다.'],[2012,6,'연구팀, AI가 유튜브 영상만 보고 고양이를 알아봤다고 발표.'],[2014,6,'“AI가 만든 가짜 사진” 기술(GAN) 논문 화제.'],[2017,6,'연구자들, 논문 “Attention Is All You Need” 발표. 지금의 챗봇이 여기서 나온다.'],[2019,2,'글 쓰는 AI 공개. “악용이 걱정돼 전체 공개는 미룬다.”'],[2020,11,'AI가 단백질 구조 예측의 난제에 큰 진전을 냈다.'],[2022,8,'AI로 만든 그림이 미국 지역 미술대회 디지털 부문 1위. 논란 폭발.'],[2022,11,'대화형 챗봇 출시. 두 달 만에 1억 명이 썼다는 추정.'],[2023,3,'전문가들 공개서한 “거대 AI 실험을 6개월 멈추자.”'],[2023,10,'미국 대통령, AI 안전 행정명령 서명.'],[2024,5,'서울에서 AI 정상회의 개최.'],[2024,10,'노벨 물리학상·화학상이 AI 연구자들에게 돌아갔다.'],[2025,1,'중국 스타트업의 저비용 AI 공개. 미국 반도체주 급락.'],[2026,1,'한국 AI 기본법 시행.']];
@@ -228,7 +231,7 @@ let S,speed=0,acc=0,bubbles=[],dots=[],over=false,diff=60,home='한국';
 const R=(a,b)=>a+Math.random()*(b-a),clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
 const has=id=>S.own.includes(id),world=()=>REGIONS.reduce((s,r)=>s+r.ai*r.w,0);
 function reset(){
- S={y:2010,m:1,pts:7,eco:40,unrest:12,unemp:6,infl:2,debt:60,ineq:35,ni:0,ei:0,fi:0,own:[],lockd:[],cost:1,shock:1,boost:0,boostT:0,costT:0,stage:0,log:[],at:{},seen:[],pactX:1,hand:[0,4,7],hist:[],alarm:0,flash:0,ch:{},echo:[],back:[],q:[...EVENTS,...LOCAL[home]].sort((a,b)=>a.y+a.m/12-b.y-b.m/12),perm:{spread:0,unrest:0,shock:0,debt:0},m:{spread:0,eco:0,job:0,fair:0,unrest:0,debt:0,shock:0,pts:0}};
+ S={y:2010,m:1,pts:7,eco:40,unrest:12,unemp:6,infl:2,debt:60,ineq:35,ni:0,ei:0,fi:0,own:[],lockd:[],cost:1,shock:1,boost:0,boostT:0,costT:0,stage:0,log:[],at:{},seen:[],pactX:1,pend:[],hand:[0,4,7],hist:[],alarm:0,flash:0,ch:{},echo:[],back:[],q:[...EVENTS,...LOCAL[home]].sort((a,b)=>a.y+a.m/12-b.y-b.m/12),perm:{spread:0,unrest:0,shock:0,debt:0},m:{spread:0,eco:0,job:0,fair:0,unrest:0,debt:0,shock:0,pts:0}};
  REGIONS.forEach(r=>{r.ai=0;r.ms=0});REGIONS[0].ai=1;bubbles=[];calls=[];fires=[];over=false;HOME[home].f(S);
 }
 function recalc(){
@@ -279,7 +282,7 @@ function tick(){
  S.ineq=clamp(S.ineq+(w*.0024)*Math.max(.1,1-S.m.fair)-.012);
  const tgt=(tight*20+(S.unemp-5)*2.3+Math.max(0,S.ineq-35)*.7+(S.infl-2)*3+12)*Math.max(.25,1+S.m.unrest);
  S.unrest=clamp(S.unrest+(tgt-S.unrest)*.04);
- protests();elections();story();echoes();
+ runPend();protests();elections();story();echoes();
  const h=HISTORY[S.ni];if(h&&(S.y>h[0]||S.y===h[0]&&S.mn>=h[1])){say(h[2]);S.ni++;bubble(1)}
  else if(S.y>=2024&&Math.random()<.09){const o=FUTURE.map(f=>f(S)).filter(Boolean);say(o[Math.floor(R(0,o.length))])}
  if(Math.random()<.25+Math.min(.15,w*.003))bubble(0);
@@ -341,7 +344,7 @@ function hud(){
  document.getElementById('date').textContent=`${S.y}년 ${S.mn||1}월`;document.getElementById('points').innerHTML=`👥 ${S.pts}<small>긴급 명령에 쓰는 힘 · 매년 초록 칸 1개당 +1</small>`;
  [['A',world()],['E',S.eco],['U',S.unrest]].forEach(([k,v])=>{document.getElementById('v'+k).textContent=Math.round(v)+'%';document.getElementById('b'+k).style.width=v+'%'});
  [['A',50,world(),-1],['E',diff,S.eco,1],['U',50,S.unrest,-1]].forEach(([k,v,c,dir])=>{document.getElementById('t'+k).style.left=v+'%';const lb=document.getElementById('l'+k);lb.style.left=v+'%';lb.textContent=`▲ ${v}`;const gap=Math.ceil((v-c)*dir),e=document.getElementById('v'+k);e.parentElement.className='g '+(gap>0?'bad':'ok');e.innerHTML+=gap>0?` <small style="color:#ff6b81">${dir>0?`목표 ${v}까지 ${gap} 부족`:`목표 ${v}보다 ${gap} 초과`}</small>`:` <small style="color:#46d6a8">✓ 목표 달성</small>`});
- const fc=forecast();document.getElementById('stats').innerHTML=fc?`<b style="color:#ff6b81">⏳ ${fc}년 AI 장악 위험</b>`:'';
+ const fc=forecast();document.getElementById('stats').innerHTML=(fc?`<b style="color:#ff6b81">⏳ ${fc}년 AI 장악 위험</b> `:'')+(S.pend.length?`정책 효과 진행 중 ${S.pend.length}개`:'');
  document.getElementById('fields').innerHTML=Object.keys(TREE).map(f=>`<button onclick="openField('${f}')">${f}<small>${TREE[f].filter(n=>has(n.id)).length}/4</small></button>`).join('');
  document.getElementById('acts').innerHTML=S.hand.map((k,i)=>{const c=CARDS[k];return`<button ${S.pts<c[2]?'disabled':''} onclick="card(${i})">${c[0]} 👥${c[2]}<small>${c[1]}</small></button>`}).join('');
  document.querySelectorAll('#speed button').forEach(b=>b.classList.toggle('on',+b.dataset.s===speed));

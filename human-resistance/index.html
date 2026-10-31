@@ -256,7 +256,7 @@ cv.addEventListener('click',e=>{const b=cv.getBoundingClientRect(),x=e.clientX-b
 function hud(){
  document.getElementById('date').textContent=`${S.y}년 ${S.mn||1}월`;document.getElementById('points').textContent=`● ${S.pts}`;
  [['A',world()],['E',S.eco],['U',S.unrest]].forEach(([k,v])=>{document.getElementById('v'+k).textContent=Math.round(v)+'%';document.getElementById('b'+k).style.width=v+'%'});
- [['A',50,'이하'],['E',diff,'이상'],['U',50,'이하']].forEach(([k,v,l])=>{document.getElementById('t'+k).style.left=v+'%';const e=document.getElementById('v'+k);e.innerHTML+=` <small>/ ${v} ${l}</small>`});
+ [['A',50,world(),-1],['E',diff,S.eco,1],['U',50,S.unrest,-1]].forEach(([k,v,c,dir])=>{document.getElementById('t'+k).style.left=v+'%';const gap=Math.ceil((v-c)*dir),e=document.getElementById('v'+k);e.innerHTML+=gap>0?` <small style="color:#ff6b81">${dir>0?gap+' 부족':gap+' 초과'}</small>`:` <small style="color:#46d6a8">목표 ${v} 달성</small>`});
  document.getElementById('stats').innerHTML=`실업 <b>${S.unemp.toFixed(1)}%</b> 물가 <b>${S.infl.toFixed(1)}%</b> 부채 <b>${Math.round(S.debt)}%</b> 불평등 <b>${Math.round(S.ineq)}</b>`;
  document.getElementById('fields').innerHTML=Object.keys(TREE).map(f=>`<button onclick="openField('${f}')">${f}<small>${TREE[f].filter(n=>has(n.id)).length}/4</small></button>`).join('');
  document.querySelectorAll('#speed button').forEach(b=>b.classList.toggle('on',+b.dataset.s===speed));

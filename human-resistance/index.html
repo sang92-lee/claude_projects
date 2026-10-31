@@ -346,7 +346,7 @@ function hud(){
  [['A',50,world(),-1],['E',diff,S.eco,1],['U',50,S.unrest,-1]].forEach(([k,v,c,dir])=>{document.getElementById('t'+k).style.left=v+'%';const lb=document.getElementById('l'+k);lb.style.left=v+'%';lb.textContent=`▲ ${v}`;const gap=Math.ceil((v-c)*dir),e=document.getElementById('v'+k);e.parentElement.className='g '+(gap>0?'bad':'ok');e.innerHTML+=gap>0?` <small style="color:#ff6b81">${dir>0?`목표 ${v}까지 ${gap} 부족`:`목표 ${v}보다 ${gap} 초과`}</small>`:` <small style="color:#46d6a8">✓ 목표 달성</small>`});
  const fc=forecast();document.getElementById('stats').innerHTML=(fc?`<b style="color:#ff6b81">⏳ ${fc}년 AI 장악 위험</b> `:'')+(S.pend.length?`정책 효과 진행 중 ${S.pend.length}개`:'');
  document.getElementById('fields').innerHTML=Object.keys(TREE).map(f=>`<button onclick="openField('${f}')">${f}<small>${TREE[f].filter(n=>has(n.id)).length}/4</small></button>`).join('');
- document.getElementById('acts').innerHTML=S.hand.map((k,i)=>{const c=CARDS[k];return`<button ${S.pts<c[2]?'disabled':''} onclick="card(${i})">${c[0]} 👥${c[2]}<small>${c[1]}</small></button>`}).join('');
+ const actH=S.hand.map((k,i)=>{const c=CARDS[k];return`<button ${S.pts<c[2]?'disabled':''} onpointerdown="card(${i})">${c[0]} 👥${c[2]}<small>${c[1]}</small></button>`}).join('');const actE=document.getElementById('acts');if(actE.dataset.h!==actH){actE.dataset.h=actH;actE.innerHTML=actH}
  document.querySelectorAll('#speed button').forEach(b=>b.classList.toggle('on',+b.dataset.s===speed));
 }
 document.querySelectorAll('#speed button').forEach(b=>b.onclick=()=>{if(!over){speed=+b.dataset.s;if(speed)prev=speed;hud()}});

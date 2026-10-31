@@ -84,7 +84,7 @@ const TREE={
  소득:[
   {id:'i1',t:'재교육 바우처',d:'실업 완화',c:5,m:{job:.12}},
   {id:'i2',t:'노동시간 단축',d:'일을 나눠 실업 완화',c:7,req:'i1',m:{job:.14,eco:-.01}},
-  {id:'i3',t:'기본소득',d:'불만 크게 감소, 부채 증가. 데이터 세금 필요',c:11,req:'i1',need:'e1',m:{unrest:-.3,debt:.12}},
+  {id:'i3',t:'기본소득',d:'불만 크게 감소, 부채 증가',c:11,req:'i1',need:'e1',m:{unrest:-.3,debt:.12}},
   {id:'i4',t:'AI 배당',d:'기업 이익을 시민에게. 부채 증가 해소',c:12,req:'i3',m:{debt:-.08,fair:.2}}],
  안보:[
   {id:'s1',t:'칩 수출 관리',d:'퍼짐 −6%. 경제 소폭 하락',c:6,m:{spread:-.06,eco:-.01}},
@@ -195,13 +195,13 @@ function log(t){if(S.log.length<14)S.log.push(`${S.y} ${t}`)}
 function bubble(g){const a=REGIONS.filter(x=>x.ai>0);if(!a.length)return;const r=a[Math.floor(R(0,a.length))],e=r.p[0];bubbles.push({x:e[0]+R(-e[2],e[2])*.6,y:e[1]+R(-e[3],e[3])*.6,life:7,v:g?4:2,gold:!!g})}
 function say(t){document.getElementById('news').innerHTML=`<span>속보</span>${t}`}
 const price=n=>Math.ceil(n.c*S.cost*(S.costT>0?1.3:1));
-function state(n){if(has(n.id))return'have';if(S.lockd.includes(n.id))return'locked';if(n.req&&!has(n.req))return'locked';if(n.need&&!has(n.need))return'locked';return'open'}
+function state(n){if(has(n.id))return'have';if(S.lockd.includes(n.id))return'locked';return'open'}
 function buy(id){const n=NODES.find(x=>x.id===id);if(state(n)!=='open'||S.pts<price(n))return;S.pts-=price(n);S.own.push(id);if(n.lock)S.lockd.push(n.lock);recalc();say(`인류 대표, <b>${n.t}</b> 시행`);log(n.t+' 시행');hud();if(FIELD)openField(FIELD)}
 let FIELD=null,prev=1;
 function pause(){if(speed){prev=speed}speed=0}
 function layer(h){document.getElementById('box').innerHTML=h;document.getElementById('layer').classList.add('on')}
 function closeL(){document.getElementById('layer').classList.remove('on');FIELD=null;speed=prev||1;hud()}
-function openField(f){pause();FIELD=f;layer(`<h2>${f} <span style="float:right;color:var(--gold)">● ${S.pts}</span></h2>`+TREE[f].map(n=>{const st=state(n),p=price(n);return`<button class="node ${st==='have'?'have':''}" ${st==='open'&&S.pts>=p?'':st==='have'?'':'disabled'} onclick="buy('${n.id}')"><em>${st==='have'?'시행 중':st==='locked'?'잠김':'● '+p}</em>${n.t}<small>${n.d}${n.req&&st==='locked'?' · 앞 단계 필요':''}</small></button>`}).join('')+`<br><button onclick="closeL()">닫기</button>`)}
+function openField(f){pause();FIELD=f;layer(`<h2>${f} <span style="float:right;color:var(--gold)">● ${S.pts}</span></h2>`+TREE[f].map(n=>{const st=state(n),p=price(n);return`<button class="node ${st==='have'?'have':''}" ${st==='open'&&S.pts>=p?'':st==='have'?'':'disabled'} onclick="buy('${n.id}')"><em>${st==='have'?'시행 중':st==='locked'?'잠김':'● '+p}</em>${n.t}<small>${n.d}${st==='locked'?' · 반대 정책을 골라 닫힘':''}</small></button>`}).join('')+`<br><button onclick="closeL()">닫기</button>`)}
 function openEvent(ev){pause();window.EV=ev;layer(`<h2>${ev.t}</h2><p>${ev.y}년. ${ev.d}</p>`+ev.a.map((c,i)=>`<button class="choice" onclick="choose(${i})">${c[0]}<small>${c[1]}</small></button>`).join(''))}
 function choose(i){const c=EV.a[i];c[2](S);S.eco=clamp(S.eco);S.unrest=clamp(S.unrest);log(`${EV.t}: ${c[0]}`);closeL()}
 

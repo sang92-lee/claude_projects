@@ -42,6 +42,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%}
 .pick{margin-bottom:12px}.pick button{margin:3px 3px 0 0}
 small.note{color:var(--dim);display:block;margin-top:12px}
 #fields{display:none}
+#points{font-size:26px;background:#3a2d0a;border:2px solid var(--gold);border-radius:12px;padding:4px 14px;white-space:normal}#points small{display:block;font-size:13px;font-weight:400;color:var(--ink)}
 .g{font-size:16px;font-weight:700;color:var(--ink);background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:8px 10px}
 .g.ok{border-color:var(--human)}.g.bad{border-color:#ff6b81}
 .g b{float:none;display:block;font-size:30px;line-height:1.2}.g b small{display:block;font-size:15px;font-weight:700}
@@ -309,7 +310,7 @@ function draw(){
 }
 cv.addEventListener('click',e=>{const b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;for(let i=0;i<bubbles.length;i++){const q=bubbles[i];if(Math.hypot(ox+q.x*sc-x,oy+q.y*sc-y)<26){S.pts+=q.v;bubbles.splice(i,1);SFX.coin();hud();return}}});
 function hud(){
- document.getElementById('date').textContent=`${S.y}년 ${S.mn||1}월`;document.getElementById('points').textContent=`● ${S.pts}  (매년 초록 칸 1개당 +1)`;
+ document.getElementById('date').textContent=`${S.y}년 ${S.mn||1}월`;document.getElementById('points').innerHTML=`● 코인 ${S.pts}<small>매년 초록 칸 1개당 +1</small>`;
  [['A',world()],['E',S.eco],['U',S.unrest]].forEach(([k,v])=>{document.getElementById('v'+k).textContent=Math.round(v)+'%';document.getElementById('b'+k).style.width=v+'%'});
  [['A',50,world(),-1],['E',diff,S.eco,1],['U',50,S.unrest,-1]].forEach(([k,v,c,dir])=>{document.getElementById('t'+k).style.left=v+'%';const lb=document.getElementById('l'+k);lb.style.left=v+'%';lb.textContent=`▲ ${v}`;const gap=Math.ceil((v-c)*dir),e=document.getElementById('v'+k);e.parentElement.className='g '+(gap>0?'bad':'ok');e.innerHTML+=gap>0?` <small style="color:#ff6b81">${dir>0?`목표 ${v}까지 ${gap} 부족`:`목표 ${v}보다 ${gap} 초과`}</small>`:` <small style="color:#46d6a8">✓ 목표 달성</small>`});
  const fc=forecast();document.getElementById('stats').innerHTML=`${fc?`<b style="color:#ff6b81">이대로면 ${fc}년 AI 장악</b> `:''}일자리 잃은 사람 <b>${S.unemp.toFixed(1)}%</b> 물건값 오름 <b>${S.infl.toFixed(1)}%</b> 나라빚 <b>${Math.round(S.debt)}%</b> 빈부격차 <b>${Math.round(S.ineq)}</b>`;

@@ -20,6 +20,8 @@ button:disabled{opacity:.42;cursor:default}
 .g{font-size:12px;color:var(--dim)}.g b{float:right;color:var(--ink)}
 .bar{height:7px;background:#0a0f18;border-radius:4px;overflow:hidden;margin-top:3px}.bar i{display:block;height:100%;transition:width .3s}
 #stats{display:flex;gap:14px;padding:0 14px 6px;font-size:12px;color:var(--dim);overflow-x:auto;white-space:nowrap}#stats b{color:var(--ink)}
+.bar{position:relative;height:9px}.t{position:absolute;top:0;bottom:0;border-left:2px dashed #fff;z-index:1}
+.g b small{color:var(--dim);font-weight:400}
 #mapwrap{flex:1;min-height:0;position:relative}
 canvas{position:absolute;inset:0;width:100%;height:100%}
 #news{padding:7px 14px;font-size:14px;background:#0a0f18;border-top:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -46,9 +48,9 @@ small.note{color:var(--dim);display:block;margin-top:12px}
  <header><div id="date"></div><div id="points"></div>
   <div id="speed"><button data-s="0">멈춤</button><button data-s="1">보통</button><button data-s="3">빠르게</button></div></header>
  <div id="gauges">
-  <div class="g">AI 퍼짐 <b id="vA"></b><div class="bar"><i id="bA" style="background:var(--ai)"></i></div></div>
-  <div class="g">경제 <b id="vE"></b><div class="bar"><i id="bE" style="background:var(--gold)"></i></div></div>
-  <div class="g">사회 불만 <b id="vU"></b><div class="bar"><i id="bU" style="background:var(--riot)"></i></div></div>
+  <div class="g">AI 퍼짐 <b id="vA"></b><div class="bar"><u id="tA" class="t"></u><i id="bA" style="background:var(--ai)"></i></div></div>
+  <div class="g">경제 <b id="vE"></b><div class="bar"><u id="tE" class="t"></u><i id="bE" style="background:var(--gold)"></i></div></div>
+  <div class="g">사회 불만 <b id="vU"></b><div class="bar"><u id="tU" class="t"></u><i id="bU" style="background:var(--riot)"></i></div></div>
  </div>
  <div id="stats"></div>
  <div id="mapwrap"><canvas id="c"></canvas></div>
@@ -254,6 +256,7 @@ cv.addEventListener('click',e=>{const b=cv.getBoundingClientRect(),x=e.clientX-b
 function hud(){
  document.getElementById('date').textContent=`${S.y}년 ${S.mn||1}월`;document.getElementById('points').textContent=`● ${S.pts}`;
  [['A',world()],['E',S.eco],['U',S.unrest]].forEach(([k,v])=>{document.getElementById('v'+k).textContent=Math.round(v)+'%';document.getElementById('b'+k).style.width=v+'%'});
+ [['A',50,'이하'],['E',diff,'이상'],['U',50,'이하']].forEach(([k,v,l])=>{document.getElementById('t'+k).style.left=v+'%';const e=document.getElementById('v'+k);e.innerHTML+=` <small>/ ${v} ${l}</small>`});
  document.getElementById('stats').innerHTML=`실업 <b>${S.unemp.toFixed(1)}%</b> 물가 <b>${S.infl.toFixed(1)}%</b> 부채 <b>${Math.round(S.debt)}%</b> 불평등 <b>${Math.round(S.ineq)}</b>`;
  document.getElementById('fields').innerHTML=Object.keys(TREE).map(f=>`<button onclick="openField('${f}')">${f}<small>${TREE[f].filter(n=>has(n.id)).length}/4</small></button>`).join('');
  document.querySelectorAll('#speed button').forEach(b=>b.classList.toggle('on',+b.dataset.s===speed));

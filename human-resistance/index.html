@@ -233,7 +233,7 @@ function spreadNews(){REGIONS.forEach((r,i)=>{
 function tick(){
  const hb=world();if(hb>35&&!window.AUTO&&++beat>=Math.max(3,Math.round(12-hb/8))){beat=0;tone(60,.18,.16);tone(52,.2,.12,'sine',.16)}
  S.mt=(S.mt||0)+1;S.mn=S.mn||1;
- S.mn++;if(S.mn>12){S.mn=1;S.y++;S.pts+=2+S.m.pts}
+ S.mn++;if(S.mn>12){S.mn=1;S.y++;const ok=(world()<=50)+(S.eco>=diff)+(S.unrest<=50);S.pts+=ok+S.m.pts;say(`새해 보너스: 목표 달성 ${ok}개 → 코인 +${ok}`)}
  const y=S.y+S.mn/12,g=y<2016?.05:y<2022?.15:y<2030?.31:.3;
  if(S.boostT>0){S.boostT--;if(!S.boostT)S.boost=0}
  if(S.costT>0)S.costT--;
@@ -309,7 +309,7 @@ function draw(){
 }
 cv.addEventListener('click',e=>{const b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;for(let i=0;i<bubbles.length;i++){const q=bubbles[i];if(Math.hypot(ox+q.x*sc-x,oy+q.y*sc-y)<26){S.pts+=q.v;bubbles.splice(i,1);SFX.coin();hud();return}}});
 function hud(){
- document.getElementById('date').textContent=`${S.y}년 ${S.mn||1}월`;document.getElementById('points').textContent=`● ${S.pts}`;
+ document.getElementById('date').textContent=`${S.y}년 ${S.mn||1}월`;document.getElementById('points').textContent=`● ${S.pts}  (매년 초록 칸 1개당 +1)`;
  [['A',world()],['E',S.eco],['U',S.unrest]].forEach(([k,v])=>{document.getElementById('v'+k).textContent=Math.round(v)+'%';document.getElementById('b'+k).style.width=v+'%'});
  [['A',50,world(),-1],['E',diff,S.eco,1],['U',50,S.unrest,-1]].forEach(([k,v,c,dir])=>{document.getElementById('t'+k).style.left=v+'%';const lb=document.getElementById('l'+k);lb.style.left=v+'%';lb.textContent=`▲ ${v}`;const gap=Math.ceil((v-c)*dir),e=document.getElementById('v'+k);e.parentElement.className='g '+(gap>0?'bad':'ok');e.innerHTML+=gap>0?` <small style="color:#ff6b81">${dir>0?`목표 ${v}까지 ${gap} 부족`:`목표 ${v}보다 ${gap} 초과`}</small>`:` <small style="color:#46d6a8">✓ 목표 달성</small>`});
  const fc=forecast();document.getElementById('stats').innerHTML=`${fc?`<b style="color:#ff6b81">이대로면 ${fc}년 AI 장악</b> `:''}일자리 잃은 사람 <b>${S.unemp.toFixed(1)}%</b> 물건값 오름 <b>${S.infl.toFixed(1)}%</b> 나라빚 <b>${Math.round(S.debt)}%</b> 빈부격차 <b>${Math.round(S.ineq)}</b>`;
@@ -335,7 +335,7 @@ function end(k){
  layer(`<h1>${t}</h1><p>${d}</p><p><b>${share}</b></p>${S.back.length?`<p><b>그때의 선택이 돌아왔다</b><br>${S.back.join('<br>')}</p>`:''}<p style="font-size:13px">${S.log.join('<br>')}</p><button class="main" onclick="menu()">다시 2010년으로</button> <button onclick="navigator.clipboard&&navigator.clipboard.writeText(SHARE);this.textContent='복사됨'">결과 복사</button><small class="note">과거는 실제 사건을 각색했고, 미래와 수치는 게임 속 가상입니다. 예측이 아닙니다.</small>`);
 }
 function menu(){
- layer(`<h1>인류 주식회사</h1><p>2010년. 작은 연구실에서 무언가가 시작됩니다. AI가 세상을 다 덮기 전에, 중요한 순간마다 둘 중 하나만 고르세요. 지도에 뜨는 동그라미를 눌러 시민의 힘을 모으면 아래 긴급 명령을 쓸 수 있어요. 어려운 지식은 필요 없어요. 경제는 살리고, AI는 절반 아래로, 사람들 화는 낮게!</p>
+ layer(`<h1>인류 주식회사</h1><p>2010년. 작은 연구실에서 무언가가 시작됩니다. AI가 세상을 다 덮기 전에, 중요한 순간마다 둘 중 하나만 고르세요. 코인은 지도의 동그라미를 누르거나, 해가 바뀔 때 초록 칸 1개당 1개씩 생겨요. 코인으로 아래 긴급 명령을 쓰세요. 어려운 지식은 필요 없어요. 경제는 살리고, AI는 절반 아래로, 사람들 화는 낮게!</p>
  <div class="pick"><b>시작 나라</b><br>${Object.keys(HOME).map(k=>`<button class="${k===home?'on':''}" onclick="home='${k}';menu()">${k}</button>`).join('')}<br><small style="color:var(--dim)">${HOME[home].d}</small></div>
  <div class="pick"><b>목표 경제</b><br>${[[50,'쉬움'],[60,'보통'],[70,'어려움']].map(([v,l])=>`<button class="${v===diff?'on':''}" onclick="diff=${v};menu()">${l} ${v}</button>`).join('')}<br><small style="color:var(--dim)">승리: AI 50 이하, 경제 ${diff} 이상, 불만 50 이하</small></div>
  <button class="main" onclick="start()">2010년 시작</button>`);

@@ -151,11 +151,11 @@ const FUTURE=[
  s=>true&&'냉장고가 “우유 사세요”라고 말하기 시작했다'
 ];
 const FACTION=['기술 낙관파','보호무역파','노동파','중도 실용파'];
-let S,speed=0,acc=0,bubbles=[],dots=[],over=false,diff=70,home='한국';
+let S,speed=0,acc=0,bubbles=[],dots=[],over=false,diff=60,home='한국';
 const R=(a,b)=>a+Math.random()*(b-a),clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
 const has=id=>S.own.includes(id),world=()=>REGIONS.reduce((s,r)=>s+r.ai*r.w,0);
 function reset(){
- S={y:2010,m:1,pts:7,eco:60,unrest:12,unemp:6,infl:2,debt:60,ineq:35,ni:0,ei:0,fi:0,own:[],lockd:[],cost:1,shock:1,boost:0,boostT:0,costT:0,stage:0,log:[],at:{},seen:[],pactX:1,perm:{spread:0,unrest:0,shock:0,debt:0},m:{spread:0,eco:0,job:0,fair:0,unrest:0,debt:0,shock:0,pts:0}};
+ S={y:2010,m:1,pts:7,eco:40,unrest:12,unemp:6,infl:2,debt:60,ineq:35,ni:0,ei:0,fi:0,own:[],lockd:[],cost:1,shock:1,boost:0,boostT:0,costT:0,stage:0,log:[],at:{},seen:[],pactX:1,perm:{spread:0,unrest:0,shock:0,debt:0},m:{spread:0,eco:0,job:0,fair:0,unrest:0,debt:0,shock:0,pts:0}};
  REGIONS.forEach(r=>{r.ai=0;r.ms=0});REGIONS[0].ai=1;bubbles=[];calls=[];over=false;HOME[home].f(S);
 }
 function recalc(){
@@ -278,7 +278,7 @@ function end(k){
 function menu(){
  layer(`<h1>인류 주식회사</h1><p>2010년. 작은 연구실에서 무언가가 시작됩니다. 중요한 순간마다 하나를 고르세요. 실제 AI 역사가 지나가고, 2026년부터는 당신의 선택이 만드는 가상의 미래입니다.</p>
  <div class="pick"><b>시작 나라</b><br>${Object.keys(HOME).map(k=>`<button class="${k===home?'on':''}" onclick="home='${k}';menu()">${k}</button>`).join('')}<br><small style="color:var(--dim)">${HOME[home].d}</small></div>
- <div class="pick"><b>목표 경제</b><br>${[[60,'쉬움'],[70,'보통'],[80,'어려움']].map(([v,l])=>`<button class="${v===diff?'on':''}" onclick="diff=${v};menu()">${l} ${v}</button>`).join('')}<br><small style="color:var(--dim)">승리: AI 50 이하, 경제 ${diff} 이상, 불만 50 이하</small></div>
+ <div class="pick"><b>목표 경제</b><br>${[[50,'쉬움'],[60,'보통'],[70,'어려움']].map(([v,l])=>`<button class="${v===diff?'on':''}" onclick="diff=${v};menu()">${l} ${v}</button>`).join('')}<br><small style="color:var(--dim)">승리: AI 50 이하, 경제 ${diff} 이상, 불만 50 이하</small></div>
  <button class="main" onclick="start()">2010년 시작</button>`);
 }
 function start(){reset();document.getElementById('layer').classList.remove('on');speed=prev=1;say('2010년. 아무도 AI를 걱정하지 않습니다. 아직은.');hud()}

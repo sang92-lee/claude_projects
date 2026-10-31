@@ -216,7 +216,7 @@ const R=(a,b)=>a+Math.random()*(b-a),clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,
 const has=id=>S.own.includes(id),world=()=>REGIONS.reduce((s,r)=>s+r.ai*r.w,0);
 function reset(){
  S={y:2010,m:1,pts:7,eco:40,unrest:12,unemp:6,infl:2,debt:60,ineq:35,ni:0,ei:0,fi:0,own:[],lockd:[],cost:1,shock:1,boost:0,boostT:0,costT:0,stage:0,log:[],at:{},seen:[],pactX:1,hist:[],alarm:0,flash:0,ch:{},echo:[],back:[],q:[...EVENTS,...LOCAL[home]].sort((a,b)=>a.y+a.m/12-b.y-b.m/12),perm:{spread:0,unrest:0,shock:0,debt:0},m:{spread:0,eco:0,job:0,fair:0,unrest:0,debt:0,shock:0,pts:0}};
- REGIONS.forEach(r=>{r.ai=0;r.ms=0});REGIONS[0].ai=1;bubbles=[];calls=[];over=false;HOME[home].f(S);
+ REGIONS.forEach(r=>{r.ai=0;r.ms=0});REGIONS[0].ai=1;bubbles=[];calls=[];fires=[];over=false;HOME[home].f(S);
 }
 function recalc(){
  const m={spread:0,eco:0,job:0,fair:0,unrest:HOME[home]===HOME['유럽']?-.1:0,debt:0,shock:0,pts:0};
@@ -234,7 +234,11 @@ const STORY=[
  {id:'ubi_bad',w:s=>has('i3')&&at('e1')>at('i3')&&s.y>at('i3'),t:'재원 없는 기본소득, 국채 위기로 번졌다',f:s=>{s.debt+=20;s.unrest+=10}}
 ];
 function story(){STORY.forEach(c=>{if(!S.seen.includes(c.id)&&c.w(S)){S.seen.push(c.id);c.f(S);say(c.t);log('★ '+c.t);call(Math.floor(R(0,REGIONS.length)),c.t);recalc()}})}
-let calls=[];
+let calls=[],fires=[];
+/* 지도 위 돌발 상황: 시간 안에 누르면 막고, 놓치면 나빠진다 */
+const FIRE={ai:['🤖','#ff4d6d','AI 폭주 차단!',(s,r)=>{r.ai=clamp(r.ai-4)},(s,r)=>{r.ai=clamp(r.ai+3)}],riot:['😡','#ffb02e','시위 진정!',s=>{s.unrest=clamp(s.unrest-4)},s=>{s.unrest=clamp(s.unrest+4)}],boom:['💰','#46d6a8','투자 유치!',s=>{s.eco=clamp(s.eco+2)},s=>{}]};
+function spawnFire(){const a=REGIONS.filter(r=>r.ai>0&&!fires.some(f=>f.r===r));if(!a.length)return;const r=a[Math.floor(R(0,a.length))],k=Math.random();fires.push({r,k:k<.5?'ai':k<.75?'riot':'boom',life:3.2,max:3.2})}
+function fireMiss(f){if(f.k!=='boom'){FIRE[f.k][4](S,f.r);say(`${f.r.n}, 대응이 늦었다`);tone(150,.25,.1,'sawtooth')}}
 function call(i,t){calls=calls.filter(c=>c.i!==i);calls.push({i,t,life:4.5});if(calls.length>4)calls.shift()}
 function spreadNews(){REGIONS.forEach((r,i)=>{
  const ms=[[1,`${r.n}에 AI 확산 중입니다`],[25,`${r.n}, 직장인 4명 중 1명이 AI 사용`],[50,`${r.n}, 업무의 절반을 AI가 처리`],[75,`${r.n}, 사람 없는 결정이 늘어납니다`]];
@@ -266,6 +270,7 @@ function tick(){
  const h=HISTORY[S.ni];if(h&&(S.y>h[0]||S.y===h[0]&&S.mn>=h[1])){say(h[2]);S.ni++;bubble(1)}
  else if(S.y>=2024&&Math.random()<.09){const o=FUTURE.map(f=>f(S)).filter(Boolean);say(o[Math.floor(R(0,o.length))])}
  if(Math.random()<.25+Math.min(.15,w*.003))bubble(0);
+ if(!window.AUTO&&S.y>=2014&&fires.length<3&&Math.random()<.14+w*.004)spawnFire();
  if(w>=85)return end('dep');if(S.unrest>=100)return end('riot');if(S.eco<=0)return end('crash');
  if(S.y>=2040)return end(judge());
  const ev=S.q[S.ei];if(ev&&(S.y>ev.y||S.y===ev.y&&S.mn>=ev.m)){S.ei++;if(ev.y===2035&&S.m.human){say('사람 승인 규칙이 자율무기 오작동을 막았다');log('★ 자율무기 사고를 막았다');S.unrest-=6;return}S.shock=Math.max(.3,(HOME[home]===HOME['한국']?1.3:1)+S.m.shock);if(window.AUTO)AUTO(ev);else openEvent(ev)}
@@ -311,13 +316,14 @@ function draw(){
  dots.forEach(d=>{const r=REGIONS[d.i],on=r.ai/100>d.s,riot=u>.3&&on&&d.t<(u-.3)*.8;g.fillStyle=riot?'#ffb02e':on?'#ff4d6d':'#3a4c64';g.beginPath();g.arc(ox+d.x*sc,oy+d.y*sc,Math.max(1.3,3.4*sc),0,7);g.fill()});
  REGIONS.forEach(r=>{const e=r.p[0];g.font=`${Math.max(11,13*sc)}px sans-serif`;g.textAlign='center';g.fillStyle='#aebdd0';g.fillText(`${r.n} ${Math.round(r.ai)}%`,ox+e[0]*sc,oy+(e[1]-e[3]-7)*sc)});
  bubbles.forEach(b=>{const x=ox+b.x*sc,y=oy+b.y*sc;g.fillStyle=b.gold?'#ffc857':'#6fc3ff';g.globalAlpha=Math.min(1,b.life);g.beginPath();g.arc(x,y,18,0,7);g.fill();g.fillStyle='#0d1420';g.font='bold 16px sans-serif';g.textAlign='center';g.fillText('+'+b.v,x,y+5.5);g.globalAlpha=1});
+ fires.forEach(f=>{const e=f.r.p[0],x=ox+e[0]*sc,y=oy+e[1]*sc,F=FIRE[f.k],q=20+3*Math.sin(performance.now()/90);g.strokeStyle=F[1];g.lineWidth=5;g.beginPath();g.arc(x,y,q+7,-1.57,-1.57+6.283*f.life/f.max);g.stroke();g.fillStyle='#0d1420';g.beginPath();g.arc(x,y,q,0,7);g.fill();g.font='22px sans-serif';g.textAlign='center';g.fillText(F[0],x,y+8)});
  g.font='bold 12px sans-serif';
  calls.forEach(c=>{const e=REGIONS[c.i].p[0],tw=g.measureText(c.t).width+18,x=clamp(ox+e[0]*sc,tw/2+4,W-tw/2-4),y=Math.max(30,oy+(e[1]-e[3]-16)*sc);
   g.globalAlpha=Math.min(1,c.life);g.fillStyle='#fff8ea';g.beginPath();g.roundRect(x-tw/2,y-24,tw,25,7);g.fill();
   const tx=ox+e[0]*sc;g.beginPath();g.moveTo(tx-6,y);g.lineTo(tx+6,y);g.lineTo(tx,y+8);g.fill();
   g.fillStyle='#22283a';g.textAlign='center';g.fillText(c.t,x,y-7);g.globalAlpha=1});
 }
-cv.addEventListener('click',e=>{const b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;for(let i=0;i<bubbles.length;i++){const q=bubbles[i];if(Math.hypot(ox+q.x*sc-x,oy+q.y*sc-y)<26){S.pts+=q.v;bubbles.splice(i,1);SFX.coin();hud();return}}});
+cv.addEventListener('click',e=>{const b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;for(let i=0;i<fires.length;i++){const f=fires[i],q=f.r.p[0];if(Math.hypot(ox+q[0]*sc-x,oy+q[1]*sc-y)<36){FIRE[f.k][3](S,f.r);S.pts+=1;fires.splice(i,1);say(FIRE[f.k][2]+' 시민 지지 +1');SFX.coin();hud();return}}for(let i=0;i<bubbles.length;i++){const q=bubbles[i];if(Math.hypot(ox+q.x*sc-x,oy+q.y*sc-y)<26){S.pts+=q.v;bubbles.splice(i,1);SFX.coin();hud();return}}});
 function hud(){
  document.getElementById('date').textContent=`${S.y}년 ${S.mn||1}월`;document.getElementById('points').innerHTML=`👥 ${S.pts}<small>긴급 명령에 쓰는 힘 · 매년 초록 칸 1개당 +1</small>`;
  [['A',world()],['E',S.eco],['U',S.unrest]].forEach(([k,v])=>{document.getElementById('v'+k).textContent=Math.round(v)+'%';document.getElementById('b'+k).style.width=v+'%'});
@@ -345,14 +351,14 @@ function end(k){
  layer(`<h1>${t}</h1><p>${d}</p><p><b>${share}</b></p>${S.back.length?`<p><b>그때의 선택이 돌아왔다</b><br>${S.back.join('<br>')}</p>`:''}<p style="font-size:13px">${S.log.join('<br>')}</p><button class="main" onclick="menu()">다시 2010년으로</button> <button onclick="navigator.clipboard&&navigator.clipboard.writeText(SHARE);this.textContent='복사됨'">결과 복사</button><small class="note">과거는 실제 사건을 각색했고, 미래와 수치는 게임 속 가상입니다. 예측이 아닙니다.</small>`);
 }
 function menu(){
- layer(`<h1>인류 주식회사</h1><p>2010년. 작은 연구실에서 무언가가 시작됩니다. AI가 세상을 다 덮기 전에, 중요한 순간마다 둘 중 하나만 고르세요. 일을 잘하면 시민이 나를 지지해 줘요. 지도의 동그라미는 시민의 응원이니 눌러서 모으고, 해가 바뀔 때도 초록 칸 1개당 지지가 1씩 늘어요. 사건에서 결단을 내려도 +2예요. 모은 지지로 아래 긴급 명령을 내리세요. 어려운 지식은 필요 없어요. 경제는 살리고, AI는 절반 아래로, 사람들 화는 낮게!</p>
+ layer(`<h1>인류 주식회사</h1><p>2010년. 작은 연구실에서 무언가가 시작됩니다. AI가 세상을 다 덮기 전에, 중요한 순간마다 둘 중 하나만 고르세요. 일을 잘하면 시민이 나를 지지해 줘요. 지도의 동그라미는 시민의 응원이니 눌러서 모으고, 해가 바뀔 때도 초록 칸 1개당 지지가 1씩 늘어요. 지도에 🤖😡💰 표시가 뜨면 원이 사라지기 전에 누르세요! 사건에서 결단을 내려도 +2예요. 모은 지지로 아래 긴급 명령을 내리세요. 어려운 지식은 필요 없어요. 경제는 살리고, AI는 절반 아래로, 사람들 화는 낮게!</p>
  <div class="pick"><b>시작 나라</b><br>${Object.keys(HOME).map(k=>`<button class="${k===home?'on':''}" onclick="home='${k}';menu()">${k}</button>`).join('')}<br><small style="color:var(--dim)">${HOME[home].d}</small></div>
  <div class="pick"><b>목표 경제</b><br>${[[50,'쉬움'],[60,'보통'],[70,'어려움']].map(([v,l])=>`<button class="${v===diff?'on':''}" onclick="diff=${v};menu()">${l} ${v}</button>`).join('')}<br><small style="color:var(--dim)">🤖 AI 막대, 💰 경제 막대, 😡 불만 막대가 모두 초록이면 승리! 흰 선이 목표예요.<br>승리: AI 50 이하, 경제 ${diff} 이상, 불만 50 이하</small></div>
  <button class="main" onclick="start()">2010년 시작</button>`);
 }
 function start(){reset();document.getElementById('layer').classList.remove('on');speed=prev=3;initAudio();say('2010년. 아무도 AI를 걱정하지 않습니다. 아직은.');hud()}
 let last=0;
-function loop(ts){const dt=Math.min(.1,(ts-last)/1000||0);last=ts;if(speed&&!over){acc+=dt*speed;if(acc>.5){acc=0;tick();hud()}bubbles.forEach(b=>b.life-=dt);bubbles=bubbles.filter(b=>b.life>0);calls.forEach(c=>c.life-=dt);calls=calls.filter(c=>c.life>0)}draw();requestAnimationFrame(loop)}
+function loop(ts){const dt=Math.min(.1,(ts-last)/1000||0);last=ts;if(speed&&!over){acc+=dt*speed;if(acc>.5){acc=0;tick();hud()}bubbles.forEach(b=>b.life-=dt);bubbles=bubbles.filter(b=>b.life>0);fires.forEach(f=>{f.life-=dt;if(f.life<=0)fireMiss(f)});fires=fires.filter(f=>f.life>0);calls.forEach(c=>c.life-=dt);calls=calls.filter(c=>c.life>0)}draw();requestAnimationFrame(loop)}
 addEventListener('resize',size);new ResizeObserver(size).observe(document.getElementById('mapwrap'));
 reset();size();build();hud();requestAnimationFrame(loop);menu();
 </script>

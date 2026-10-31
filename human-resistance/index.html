@@ -50,6 +50,15 @@ small.note{color:var(--dim);display:block;margin-top:12px}
 #stats{font-size:15px;padding:2px 14px 6px}
 #acts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px 14px max(10px,env(safe-area-inset-bottom))}#acts button{padding:8px 2px;font-size:14px}#acts small{display:block;color:var(--gold);font-size:11px}
 #news,#date{display:none}
+#gauges{gap:6px;padding:0 10px 4px}
+.g{font-size:14px;padding:3px 7px;border-radius:8px;border-width:1px}
+.g b{display:inline;float:right;font-size:15px;line-height:1.2}.g b small,.tl{display:none}
+.bar{height:12px;margin-top:2px;border-radius:6px}.t{border-left:3px solid #fff;z-index:2}
+.g.ok .bar i{background:var(--human)!important}.g.bad .bar i{background:#ff4d6d!important}
+#stats{padding:0 10px 2px;font-size:13px}#stats:empty{display:none}
+header{padding:5px 10px}
+#points{font-size:17px;padding:2px 10px;white-space:nowrap}#points small{display:none}
+#acts{padding:5px 10px max(6px,env(safe-area-inset-bottom));gap:5px}#acts button{padding:5px 2px;font-size:13px}#acts small{display:none}
 </style>
 </head>
 <body>
@@ -57,9 +66,9 @@ small.note{color:var(--dim);display:block;margin-top:12px}
  <header><div id="date"></div><div id="points"></div>
   <div id="speed"><button data-s="0">멈춤</button><button data-s="3">보통</button><button data-s="6">빠르게</button></div></header>
  <div id="gauges">
-  <div class="g">AI 퍼짐 <b id="vA"></b><div class="bar"><u id="tA" class="t"></u><i id="bA" style="background:var(--ai)"></i></div><div class="tl"><span id="lA"></span></div></div>
-  <div class="g">경제 <b id="vE"></b><div class="bar"><u id="tE" class="t"></u><i id="bE" style="background:var(--gold)"></i></div><div class="tl"><span id="lE"></span></div></div>
-  <div class="g">사회 불만 <b id="vU"></b><div class="bar"><u id="tU" class="t"></u><i id="bU" style="background:var(--riot)"></i></div><div class="tl"><span id="lU"></span></div></div>
+  <div class="g">🤖 <b id="vA"></b><div class="bar"><u id="tA" class="t"></u><i id="bA" style="background:var(--ai)"></i></div><div class="tl"><span id="lA"></span></div></div>
+  <div class="g">💰 <b id="vE"></b><div class="bar"><u id="tE" class="t"></u><i id="bE" style="background:var(--gold)"></i></div><div class="tl"><span id="lE"></span></div></div>
+  <div class="g">😡 <b id="vU"></b><div class="bar"><u id="tU" class="t"></u><i id="bU" style="background:var(--riot)"></i></div><div class="tl"><span id="lU"></span></div></div>
  </div>
  <div id="stats"></div>
  <div id="mapwrap"><canvas id="c"></canvas></div>
@@ -310,12 +319,12 @@ function draw(){
 }
 cv.addEventListener('click',e=>{const b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;for(let i=0;i<bubbles.length;i++){const q=bubbles[i];if(Math.hypot(ox+q.x*sc-x,oy+q.y*sc-y)<26){S.pts+=q.v;bubbles.splice(i,1);SFX.coin();hud();return}}});
 function hud(){
- document.getElementById('date').textContent=`${S.y}년 ${S.mn||1}월`;document.getElementById('points').innerHTML=`시민 지지 ${S.pts}<small>긴급 명령에 쓰는 힘 · 매년 초록 칸 1개당 +1</small>`;
+ document.getElementById('date').textContent=`${S.y}년 ${S.mn||1}월`;document.getElementById('points').innerHTML=`👥 ${S.pts}<small>긴급 명령에 쓰는 힘 · 매년 초록 칸 1개당 +1</small>`;
  [['A',world()],['E',S.eco],['U',S.unrest]].forEach(([k,v])=>{document.getElementById('v'+k).textContent=Math.round(v)+'%';document.getElementById('b'+k).style.width=v+'%'});
  [['A',50,world(),-1],['E',diff,S.eco,1],['U',50,S.unrest,-1]].forEach(([k,v,c,dir])=>{document.getElementById('t'+k).style.left=v+'%';const lb=document.getElementById('l'+k);lb.style.left=v+'%';lb.textContent=`▲ ${v}`;const gap=Math.ceil((v-c)*dir),e=document.getElementById('v'+k);e.parentElement.className='g '+(gap>0?'bad':'ok');e.innerHTML+=gap>0?` <small style="color:#ff6b81">${dir>0?`목표 ${v}까지 ${gap} 부족`:`목표 ${v}보다 ${gap} 초과`}</small>`:` <small style="color:#46d6a8">✓ 목표 달성</small>`});
- const fc=forecast();document.getElementById('stats').innerHTML=`${fc?`<b style="color:#ff6b81">이대로면 ${fc}년 AI 장악</b> `:''}일자리 잃은 사람 <b>${S.unemp.toFixed(1)}%</b> 물건값 오름 <b>${S.infl.toFixed(1)}%</b> 나라빚 <b>${Math.round(S.debt)}%</b> 빈부격차 <b>${Math.round(S.ineq)}</b>`;
+ const fc=forecast();document.getElementById('stats').innerHTML=fc?`<b style="color:#ff6b81">⏳ ${fc}년 AI 장악 위험</b>`:'';
  document.getElementById('fields').innerHTML=Object.keys(TREE).map(f=>`<button onclick="openField('${f}')">${f}<small>${TREE[f].filter(n=>has(n.id)).length}/4</small></button>`).join('');
- document.getElementById('acts').innerHTML=CARDS.map((c,i)=>`<button ${S.pts<c[2]?'disabled':''} onclick="card(${i})">${c[0]} · 지지 ${c[2]}<small>${c[1]}</small></button>`).join('');
+ document.getElementById('acts').innerHTML=CARDS.map((c,i)=>`<button ${S.pts<c[2]?'disabled':''} onclick="card(${i})">${c[0]} 👥${c[2]}<small>${c[1]}</small></button>`).join('');
  document.querySelectorAll('#speed button').forEach(b=>b.classList.toggle('on',+b.dataset.s===speed));
 }
 document.querySelectorAll('#speed button').forEach(b=>b.onclick=()=>{if(!over){speed=+b.dataset.s;if(speed)prev=speed;hud()}});
@@ -338,13 +347,13 @@ function end(k){
 function menu(){
  layer(`<h1>인류 주식회사</h1><p>2010년. 작은 연구실에서 무언가가 시작됩니다. AI가 세상을 다 덮기 전에, 중요한 순간마다 둘 중 하나만 고르세요. 일을 잘하면 시민이 나를 지지해 줘요. 지도의 동그라미는 시민의 응원이니 눌러서 모으고, 해가 바뀔 때도 초록 칸 1개당 지지가 1씩 늘어요. 사건에서 결단을 내려도 +2예요. 모은 지지로 아래 긴급 명령을 내리세요. 어려운 지식은 필요 없어요. 경제는 살리고, AI는 절반 아래로, 사람들 화는 낮게!</p>
  <div class="pick"><b>시작 나라</b><br>${Object.keys(HOME).map(k=>`<button class="${k===home?'on':''}" onclick="home='${k}';menu()">${k}</button>`).join('')}<br><small style="color:var(--dim)">${HOME[home].d}</small></div>
- <div class="pick"><b>목표 경제</b><br>${[[50,'쉬움'],[60,'보통'],[70,'어려움']].map(([v,l])=>`<button class="${v===diff?'on':''}" onclick="diff=${v};menu()">${l} ${v}</button>`).join('')}<br><small style="color:var(--dim)">승리: AI 50 이하, 경제 ${diff} 이상, 불만 50 이하</small></div>
+ <div class="pick"><b>목표 경제</b><br>${[[50,'쉬움'],[60,'보통'],[70,'어려움']].map(([v,l])=>`<button class="${v===diff?'on':''}" onclick="diff=${v};menu()">${l} ${v}</button>`).join('')}<br><small style="color:var(--dim)">🤖 AI 막대, 💰 경제 막대, 😡 불만 막대가 모두 초록이면 승리! 흰 선이 목표예요.<br>승리: AI 50 이하, 경제 ${diff} 이상, 불만 50 이하</small></div>
  <button class="main" onclick="start()">2010년 시작</button>`);
 }
 function start(){reset();document.getElementById('layer').classList.remove('on');speed=prev=3;initAudio();say('2010년. 아무도 AI를 걱정하지 않습니다. 아직은.');hud()}
 let last=0;
 function loop(ts){const dt=Math.min(.1,(ts-last)/1000||0);last=ts;if(speed&&!over){acc+=dt*speed;if(acc>.5){acc=0;tick();hud()}bubbles.forEach(b=>b.life-=dt);bubbles=bubbles.filter(b=>b.life>0);calls.forEach(c=>c.life-=dt);calls=calls.filter(c=>c.life>0)}draw();requestAnimationFrame(loop)}
-addEventListener('resize',size);
+addEventListener('resize',size);new ResizeObserver(size).observe(document.getElementById('mapwrap'));
 reset();size();build();hud();requestAnimationFrame(loop);menu();
 </script>
 </body>

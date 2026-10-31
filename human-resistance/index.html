@@ -58,7 +58,7 @@ small.note{color:var(--dim);display:block;margin-top:12px}
 #stats{padding:0 10px 2px;font-size:13px}#stats:empty{display:none}
 header{padding:5px 10px}
 #points{font-size:17px;padding:2px 10px;white-space:nowrap}#points small{display:none}
-#acts{padding:5px 10px max(6px,env(safe-area-inset-bottom));gap:5px}#acts button{padding:5px 2px;font-size:13px}#acts small{display:none}
+#acts{padding:5px 10px max(6px,env(safe-area-inset-bottom));gap:5px}#acts button{padding:5px 2px;font-size:13px}#acts small{display:block;font-size:12px}
 </style>
 </head>
 <body>
@@ -173,8 +173,21 @@ const ECHO=[
 function apply(ev,i){const c=ev.a[i];c[2](S);S.eco=clamp(S.eco);S.unrest=clamp(S.unrest);S.ch[ev.t]=i;log(`${ev.t}: ${c[0]}`)}
 function echoes(){ECHO.forEach((e,k)=>{if(S.ch[e[0]]===e[1]&&S.y>=e[2]&&!S.echo.includes(k)){S.echo.push(k);e[4](S);if(!window.AUTO)SFX.echo();S.eco=clamp(S.eco);recalc();say(e[3]);S.back.push(e[3]);call(Math.floor(R(0,REGIONS.length)),e[3])}})}
 function title(){const a=world(),e=S.eco;return a<30&&e<45?'브레이크 장인':a>60&&e>60?'가속 페달 신봉자':has('i3')?'기본소득 대통령':S.ch['전쟁과 드론']===1?'안보 매파':a<=50&&e>=50?'줄타기 달인':'우왕좌왕 지도자'}
-const CARDS=[['긴급 제동','2년간 AI 느리게',6,s=>{s.boost=-.3;s.boostT=24}],['경기 살리기','경제 +5, 나라빚 +8',6,s=>{s.eco=clamp(s.eco+5);s.debt+=8}],['민심 달래기','불만 −12',4,s=>{s.unrest=clamp(s.unrest-12)}]];
-function card(i){const c=CARDS[i];if(over||S.pts<c[2])return;S.pts-=c[2];c[3](S);SFX.card();say(`긴급 명령: ${c[0]}`);hud()}
+/* 쓰면 새 카드가 나온다. 좋은 효과엔 대가가 붙는다 */
+const CARDS=[
+ ['데이터센터 전기 끊기','🤖⬇⬇ 💰⬇',5,s=>{s.boost=-.3;s.boostT=24;s.eco-=3}],
+ ['AI 회사 청문회','🤖⬇ 😡⬇',4,s=>{s.boost=-.15;s.boostT=12;s.unrest-=3}],
+ ['AI 천재 스카우트','🤖⬇ 💰⬇',4,s=>{s.boost=-.2;s.boostT=18;s.eco-=2}],
+ ['로봇세','🤖⬇ 😡⬇ 💰⬇',5,s=>{s.boost=-.12;s.boostT=18;s.unrest-=4;s.eco-=2}],
+ ['반도체 공장 유치','💰⬆⬆ 🤖⬆',5,s=>{s.eco+=7;s.boost=.15;s.boostT=24}],
+ ['전 국민 AI 교실','💰⬆ 😡⬇ 🤖⬆',4,s=>{s.eco+=3;s.unrest-=5;s.boost=.1;s.boostT=12}],
+ ['국채 왕창 발행','💰⬆⬆ 나라빚⬆',4,s=>{s.eco+=5;s.debt+=14}],
+ ['주 4일제','😡⬇⬇ 💰⬇',4,s=>{s.unrest-=10;s.eco-=3}],
+ ['청년 지원금','😡⬇ 나라빚⬆',3,s=>{s.unrest-=8;s.debt+=10}],
+ ['사람 직원 보호법','😡⬇ 🤖⬇ 💰⬇',5,s=>{s.unrest-=6;s.boost=-.1;s.boostT=12;s.eco-=2}]
+];
+function deal(){let k;do{k=Math.floor(R(0,CARDS.length))}while(S.hand.includes(k));return k}
+function card(i){const c=CARDS[S.hand[i]];if(over||S.pts<c[2])return;S.pts-=c[2];c[3](S);S.eco=clamp(S.eco);S.unrest=clamp(S.unrest);S.hand[i]=deal();SFX.card();say(`긴급 명령: ${c[0]}`);hud()}
 function forecast(){const w=world(),h=S.hist;if(h.length<12||w<8)return'';const v=w-h[h.length-12];if(v<=.05)return'';const y=S.y+(85-w)/v;return y>=2040?'':Math.floor(y)}
 function take(id){const n=NODES.find(x=>x.id===id);if(has(id)||S.lockd.includes(id))return;S.own.push(id);S.at[id]=S.y;if(n.lock)S.lockd.push(n.lock);recalc();say(`인류 대표, <b>${n.t}</b> 시행`)}
 const HISTORY=[[2010,3,'음성 인식이 조금 좋아졌다. 아무도 관심 없다.'],[2011,2,'AI가 미국 퀴즈쇼에서 인간 챔피언들을 이겼다.'],[2012,6,'연구팀, AI가 유튜브 영상만 보고 고양이를 알아봤다고 발표.'],[2014,6,'“AI가 만든 가짜 사진” 기술(GAN) 논문 화제.'],[2017,6,'연구자들, 논문 “Attention Is All You Need” 발표. 지금의 챗봇이 여기서 나온다.'],[2019,2,'글 쓰는 AI 공개. “악용이 걱정돼 전체 공개는 미룬다.”'],[2020,11,'AI가 단백질 구조 예측의 난제에 큰 진전을 냈다.'],[2022,8,'AI로 만든 그림이 미국 지역 미술대회 디지털 부문 1위. 논란 폭발.'],[2022,11,'대화형 챗봇 출시. 두 달 만에 1억 명이 썼다는 추정.'],[2023,3,'전문가들 공개서한 “거대 AI 실험을 6개월 멈추자.”'],[2023,10,'미국 대통령, AI 안전 행정명령 서명.'],[2024,5,'서울에서 AI 정상회의 개최.'],[2024,10,'노벨 물리학상·화학상이 AI 연구자들에게 돌아갔다.'],[2025,1,'중국 스타트업의 저비용 AI 공개. 미국 반도체주 급락.'],[2026,1,'한국 AI 기본법 시행.']];
@@ -215,7 +228,7 @@ let S,speed=0,acc=0,bubbles=[],dots=[],over=false,diff=60,home='한국';
 const R=(a,b)=>a+Math.random()*(b-a),clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
 const has=id=>S.own.includes(id),world=()=>REGIONS.reduce((s,r)=>s+r.ai*r.w,0);
 function reset(){
- S={y:2010,m:1,pts:7,eco:40,unrest:12,unemp:6,infl:2,debt:60,ineq:35,ni:0,ei:0,fi:0,own:[],lockd:[],cost:1,shock:1,boost:0,boostT:0,costT:0,stage:0,log:[],at:{},seen:[],pactX:1,hist:[],alarm:0,flash:0,ch:{},echo:[],back:[],q:[...EVENTS,...LOCAL[home]].sort((a,b)=>a.y+a.m/12-b.y-b.m/12),perm:{spread:0,unrest:0,shock:0,debt:0},m:{spread:0,eco:0,job:0,fair:0,unrest:0,debt:0,shock:0,pts:0}};
+ S={y:2010,m:1,pts:7,eco:40,unrest:12,unemp:6,infl:2,debt:60,ineq:35,ni:0,ei:0,fi:0,own:[],lockd:[],cost:1,shock:1,boost:0,boostT:0,costT:0,stage:0,log:[],at:{},seen:[],pactX:1,hand:[0,4,7],hist:[],alarm:0,flash:0,ch:{},echo:[],back:[],q:[...EVENTS,...LOCAL[home]].sort((a,b)=>a.y+a.m/12-b.y-b.m/12),perm:{spread:0,unrest:0,shock:0,debt:0},m:{spread:0,eco:0,job:0,fair:0,unrest:0,debt:0,shock:0,pts:0}};
  REGIONS.forEach(r=>{r.ai=0;r.ms=0});REGIONS[0].ai=1;bubbles=[];calls=[];fires=[];over=false;HOME[home].f(S);
 }
 function recalc(){
@@ -330,7 +343,7 @@ function hud(){
  [['A',50,world(),-1],['E',diff,S.eco,1],['U',50,S.unrest,-1]].forEach(([k,v,c,dir])=>{document.getElementById('t'+k).style.left=v+'%';const lb=document.getElementById('l'+k);lb.style.left=v+'%';lb.textContent=`▲ ${v}`;const gap=Math.ceil((v-c)*dir),e=document.getElementById('v'+k);e.parentElement.className='g '+(gap>0?'bad':'ok');e.innerHTML+=gap>0?` <small style="color:#ff6b81">${dir>0?`목표 ${v}까지 ${gap} 부족`:`목표 ${v}보다 ${gap} 초과`}</small>`:` <small style="color:#46d6a8">✓ 목표 달성</small>`});
  const fc=forecast();document.getElementById('stats').innerHTML=fc?`<b style="color:#ff6b81">⏳ ${fc}년 AI 장악 위험</b>`:'';
  document.getElementById('fields').innerHTML=Object.keys(TREE).map(f=>`<button onclick="openField('${f}')">${f}<small>${TREE[f].filter(n=>has(n.id)).length}/4</small></button>`).join('');
- document.getElementById('acts').innerHTML=CARDS.map((c,i)=>`<button ${S.pts<c[2]?'disabled':''} onclick="card(${i})">${c[0]} 👥${c[2]}<small>${c[1]}</small></button>`).join('');
+ document.getElementById('acts').innerHTML=S.hand.map((k,i)=>{const c=CARDS[k];return`<button ${S.pts<c[2]?'disabled':''} onclick="card(${i})">${c[0]} 👥${c[2]}<small>${c[1]}</small></button>`}).join('');
  document.querySelectorAll('#speed button').forEach(b=>b.classList.toggle('on',+b.dataset.s===speed));
 }
 document.querySelectorAll('#speed button').forEach(b=>b.onclick=()=>{if(!over){speed=+b.dataset.s;if(speed)prev=speed;hud()}});

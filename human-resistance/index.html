@@ -85,12 +85,12 @@ const TREE={
   {id:'e1',t:'데이터 세금',d:'AI 기업에 데이터 사용료. 퍼짐 −4%',c:5,m:{spread:-.04,fair:.1}},
   {id:'e2',t:'AI 기업 분할',d:'독점 해체. 퍼짐 −8%, 불평등 완화',c:9,req:'e1',lock:'e3',m:{spread:-.08,fair:.2,eco:-.01}},
   {id:'e3',t:'AI 특구',d:'성장 우선. 경제 크게 상승, 퍼짐 +10%',c:7,req:'e1',lock:'e2',m:{spread:.1,eco:.05}},
-  {id:'e4',t:'공공 AI',d:'AI를 모두의 것으로. 불평등 크게 완화',c:12,req:'e2',m:{fair:.3,eco:.02}}],
+  {id:'e4',t:'나라가 만든 모두의 AI',d:'AI를 모두의 것으로. 불평등 크게 완화',c:12,req:'e2',m:{fair:.3,eco:.02}}],
  소득:[
-  {id:'i1',t:'재교육 바우처',d:'실업 완화',c:5,m:{job:.12}},
-  {id:'i2',t:'노동시간 단축',d:'일을 나눠 실업 완화',c:7,req:'i1',m:{job:.14,eco:-.01}},
-  {id:'i3',t:'기본소득',d:'불만 크게 감소, 부채 증가',c:11,req:'i1',need:'e1',m:{unrest:-.3,debt:.12}},
-  {id:'i4',t:'AI 배당',d:'기업 이익을 시민에게. 부채 증가 해소',c:12,req:'i3',m:{debt:-.08,fair:.2}}],
+  {id:'i1',t:'새 일을 배우게 지원',d:'일자리를 지킴',c:5,m:{job:.12}},
+  {id:'i2',t:'일하는 시간을 줄인다',d:'일을 나눠 실업 완화',c:7,req:'i1',m:{job:.14,eco:-.01}},
+  {id:'i3',t:'기본소득',d:'화는 풀리지만 나라빚이 늚',c:11,req:'i1',need:'e1',m:{unrest:-.3,debt:.12}},
+  {id:'i4',t:'AI가 번 돈을 나눠 준다',d:'기업 이익을 시민에게. 부채 증가 해소',c:12,req:'i3',m:{debt:-.08,fair:.2}}],
  안보:[
   {id:'s1',t:'칩 수출 관리',d:'퍼짐 −6%. 경제 소폭 하락',c:6,m:{spread:-.06,eco:-.01}},
   {id:'s2',t:'사람 승인 규칙',d:'공격 결정은 사람이. 사고 위험 차단',c:8,req:'s1',m:{spread:-.04,flag:'human'}},
@@ -115,26 +115,47 @@ const TREE={
 const NODES=Object.values(TREE).flat();
 const P=id=>s=>take(id);
 const EVENTS=[
- {y:2012,m:10,t:'딥러닝의 등장',d:'신경망이 이미지 인식 대회에서 압도적으로 우승했습니다. 연구자들이 술렁입니다.',a:[['안전 연구를 시작한다','아무도 관심 없을 때 미리 준비',P('k1')],['시장에 맡긴다','경제가 조금 좋아짐',s=>{s.eco+=2}]]},
- {y:2016,m:3,t:'AI, 이세돌을 꺾다',d:'AI가 바둑 세계 최정상급 기사를 이겼습니다. 온 나라가 놀랐습니다.',a:[['AI 기업에 데이터 세금','이익을 사회와 나눔',P('e1')],['AI 특구로 키운다','성장은 빠르지만 AI도 빨라짐',P('e3')]]},
- {y:2018,m:5,t:'유럽 개인정보 규정 시행',d:'유럽이 강력한 개인정보 보호 규정(GDPR)을 시행했습니다.',a:[['AI 생성물 표시도 준비','가짜뉴스에 미리 대비',P('p1')],['기업 부담을 줄인다','경제가 조금 좋아짐',s=>{s.eco+=2}]]},
- {y:2019,m:5,t:'OECD AI 원칙',d:'여러 나라가 AI 원칙에 합의했습니다. 구속력은 없습니다.',a:[['연구 안전 심사 도입','위기에 강해짐',P('d1')],['선언으로 충분하다','비용 없음',s=>{}]]},
- {y:2020,m:3,t:'세계적 전염병',d:'도시가 멈췄습니다. 재택근무와 AI 도구가 급속히 퍼집니다.',a:[['돈을 풀어 지킨다','부채 증가, 실업 방어',s=>{s.debt+=18}],['긴축한다','불만 급증',s=>{s.unrest+=20*s.shock}]]},
- {y:2021,m:4,t:'유럽, AI법 제안',d:'위험도에 따라 AI를 규제하는 법안이 나왔습니다.',a:[['우리도 검증을 의무화','AI가 느려짐, 경제 소폭 하락',P('k2')],['기다려 본다','규제 없이 성장',s=>{s.eco+=2}]]},
- {y:2022,m:3,t:'전쟁과 드론',d:'전쟁터에서 드론과 자동화 무기가 쓰이고 있습니다.',a:[['공격은 사람이 승인','나중 사고를 막을 수 있음',P('s2')],['안보 AI에 투자','위기에 강하지만 AI 가속, 협약 불가',P('s3')]]},
- {y:2022,m:10,t:'첨단 칩 수출 통제',d:'미국이 첨단 AI 반도체의 대중국 수출을 통제했습니다.',a:[['통제에 동참','AI 둔화, 경제 하락',P('s1')],['중립을 지킨다','경제 유지',s=>{s.eco+=2}]]},
- {y:2023,m:5,t:'작가·배우 파업',d:'미국 작가들이 AI 사용 제한 등을 요구하며 파업했습니다.',a:[['재교육 바우처','실업 완화',P('i1')],['노사에 맡긴다','불만 증가',s=>{s.unrest+=6}]]},
- {y:2023,m:11,t:'AI 안전 정상회의',d:'영국에서 각국이 AI 위험을 논의했습니다. 미국과 중국도 참석했습니다.',a:[['미중 AI 협약 추진','AI 크게 둔화',P('s4')],['성명으로 끝낸다','경제 유지',s=>{s.eco+=2}]]},
- {y:2024,m:8,t:'유럽 AI법 발효',d:'세계 최초의 포괄적 AI 법이 발효됐습니다.',a:[['AI 감사 기구 설립','AI 둔화',P('p4')],['유럽 기업이 뒤처지길 기다린다','경제 상승',s=>{s.eco+=3}]]},
- {y:2024,m:12,t:'한국 AI 기본법 통과',d:'한국 국회가 AI 기본법을 통과시켰습니다.',a:[['시민 의회를 연다','불만 크게 완화',P('p3')],['진흥에 집중한다','경제 상승',s=>{s.eco+=3}]]},
- {y:2026,m:6,t:'신입 채용이 줄었다 (가상)',d:'여기부터는 게임 속 가상의 미래입니다. 사무직 신입 공고가 줄고 있습니다.',a:[['노동시간 단축','일을 나눔',P('i2')],['AI 기업을 분할','독점을 막음',P('e2')]]},
- {y:2027,m:5,t:'해협 위기 (가상)',d:'칩 공급의 절반이 끊겼습니다.',a:[['국제 중재에 나선다','충격 완화',s=>{s.eco-=2}]  ,['자국 칩을 비축한다','경제 하락, 물가 급등',s=>{s.eco-=9*s.shock;s.infl+=3*s.shock}]]},
- {y:2029,m:2,t:'실업 대란 (가상)',d:'사람들이 거리로 나왔습니다. 기본소득 요구가 커집니다.',a:[['기본소득 지급','불만 크게 감소, 부채 증가',P('i3')],['미룬다','다음 선거가 위험',s=>{s.unrest+=10}]]},
+ {y:2012,m:10,t:'딥러닝의 등장',d:'신경망이 이미지 인식 대회에서 압도적으로 우승했습니다. 연구자들이 술렁입니다.',a:[['AI 안전을 미리 연구한다','아무도 관심 없을 때 미리 준비',P('k1')],['시장에 맡긴다','경제가 조금 좋아짐',s=>{s.eco+=2}]]},
+ {y:2016,m:3,t:'AI, 이세돌을 꺾다',d:'AI가 바둑 세계 최정상급 기사를 이겼습니다. 온 나라가 놀랐습니다.',a:[['AI 회사에 세금을 걷는다','번 돈을 모두와 나눔',P('e1')],['AI 회사를 팍팍 밀어준다','성장은 빠르지만 AI도 빨라짐',P('e3')]]},
+ {y:2018,m:5,t:'유럽, 내 정보 지키는 법 시작',d:'유럽이 회사가 내 정보를 함부로 못 쓰게 하는 법(GDPR)을 시작했습니다.',a:[['AI가 만든 글·사진에 표시 달기','가짜뉴스에 미리 대비',P('p1')],['회사들 편하게 해 준다','경제가 조금 좋아짐',s=>{s.eco+=2}]]},
+ {y:2019,m:5,t:'세계가 약속한 AI 원칙',d:'여러 나라가 AI 약속을 했습니다. 안 지켜도 벌은 없습니다.',a:[['위험한 연구는 미리 검사','위기에 강해짐',P('d1')],['약속이면 충분하다','비용 없음',s=>{}]]},
+ {y:2020,m:3,t:'세계적 전염병',d:'도시가 멈췄습니다. 재택근무와 AI 도구가 급속히 퍼집니다.',a:[['나랏돈을 풀어 돕는다','나라빚은 늘지만 일자리를 지킴',s=>{s.debt+=18}],['돈을 아낀다','사람들이 크게 화남',s=>{s.unrest+=20*s.shock}]]},
+ {y:2021,m:4,t:'유럽, AI 법을 제안',d:'위험한 AI일수록 엄격히 막자는 법이 나왔습니다.',a:[['우리도 출시 전 검사 의무화','AI가 느려짐, 경제 소폭 하락',P('k2')],['기다려 본다','막지 않고 성장',s=>{s.eco+=2}]]},
+ {y:2022,m:3,t:'전쟁과 드론',d:'전쟁터에서 드론과 자동화 무기가 쓰이고 있습니다.',a:[['공격 결정은 꼭 사람이','나중 사고를 막을 수 있음',P('s2')],['군사 AI에 투자','나라는 강해지지만 AI도 빨라짐',P('s3')]]},
+ {y:2022,m:10,t:'AI 칩을 중국에 못 팔게 하다',d:'미국이 AI에 쓰는 고급 반도체를 중국에 못 팔게 막았습니다.',a:[['같이 막는다','AI 둔화, 경제 하락',P('s1')],['양쪽 다 판다','경제에 영향 없음',s=>{s.eco+=2}]]},
+ {y:2023,m:5,t:'작가·배우 파업',d:'미국 작가들이 AI 사용 제한 등을 요구하며 파업했습니다.',a:[['새 일을 배우게 지원','일자리를 지킴',P('i1')],['알아서 해결하게 둔다','불만 증가',s=>{s.unrest+=6}]]},
+ {y:2023,m:11,t:'AI 안전 정상회의',d:'영국에서 각국이 AI 위험을 논의했습니다. 미국과 중국도 참석했습니다.',a:[['미국·중국 약속을 이끈다','AI 크게 둔화',P('s4')],['성명으로 끝낸다','경제에 영향 없음',s=>{s.eco+=2}]]},
+ {y:2024,m:8,t:'유럽 AI 법 시작',d:'세계 처음으로 AI 전체를 다루는 법이 시작됐습니다.',a:[['AI 감시 기관을 만든다','AI 둔화',P('p4')],['유럽 기업이 뒤처지길 기다린다','경제 상승',s=>{s.eco+=3}]]},
+ {y:2024,m:12,t:'한국 AI 법 통과',d:'한국 국회가 AI 기본법을 통과시켰습니다.',a:[['시민에게 직접 묻는다','불만 크게 완화',P('p3')],['AI 산업을 키운다','경제 상승',s=>{s.eco+=3}]]},
+ {y:2026,m:6,t:'신입 채용이 줄었다 (가상)',d:'여기부터는 게임 속 가상의 미래입니다. 사무직 신입 공고가 줄고 있습니다.',a:[['일하는 시간을 줄인다','일을 나눔',P('i2')],['거대 AI 회사를 쪼갠다','한 회사가 독차지 못 함',P('e2')]]},
+ {y:2027,m:5,t:'해협 위기 (가상)',d:'반도체 절반이 안 들어옵니다.',a:[['싸움을 말린다','충격 완화',s=>{s.eco-=2}]  ,['우리 칩을 쌓아 둔다','경제가 나빠지고 물건값이 오름',s=>{s.eco-=9*s.shock;s.infl+=3*s.shock}]]},
+ {y:2029,m:2,t:'실업 대란 (가상)',d:'사람들이 거리로 나왔습니다. 기본소득 요구가 커집니다.',a:[['모두에게 매달 돈을 준다','화는 풀리지만 나라빚이 늚',P('i3')],['미룬다','다음 선거가 위험',s=>{s.unrest+=10}]]},
  {y:2031,m:6,t:'AI 진단, 희귀병 발견 (가상)',d:'사람 의사가 놓친 병을 찾아냈습니다.',a:[['AI 진단 허용','생명을 구함, AI 소폭 가속',P('d2')],['사람 확인 의무화','안전하지만 느림',s=>{s.eco-=2}]]},
- {y:2033,m:4,t:'AI 이익 어디로 (가상)',d:'이익이 소수 기업에 몰렸습니다.',a:[['공공 AI','불평등 크게 완화',P('e4')],['AI 배당','시민에게 나눔',P('i4')]]},
+ {y:2033,m:4,t:'AI 이익 어디로 (가상)',d:'이익이 소수 기업에 몰렸습니다.',a:[['나라가 만든 모두의 AI','빈부격차가 크게 줄어듦',P('e4')],['AI가 번 돈을 나눠 준다','시민에게 나눔',P('i4')]]},
  {y:2035,m:9,t:'자율무기 사고 (가상)',d:'사람 승인 없는 공격으로 민간인이 다쳤습니다.',a:[['전면 조사','불만 증가, 경제 하락',s=>{s.unrest+=14;s.eco-=3}],['조용히 넘긴다','큰 시위 위험',s=>{s.unrest+=22}]]},
  {y:2037,m:3,t:'설명할 수 없는 AI (가상)',d:'왜 그렇게 결정했는지 아무도 설명 못 합니다.',a:[['이해 가능한 AI만 허용','AI 크게 둔화',P('k4')],['성능을 택한다','경제 상승',s=>{s.eco+=4}]]}
 ];
+const LOCAL={
+ '미국':[{y:2015,m:12,t:'비영리 AI 연구소 설립',d:'실리콘밸리 인사들이 인류를 위한 AI를 내걸고 연구소를 세웠습니다.',a:[['공공 감독을 요구한다','투명성 확보',P('p1')],['민간에 맡긴다','혁신이 빨라짐',s=>{s.eco+=2}]]},{y:2019,m:2,t:'미국 AI 이니셔티브',d:'대통령이 AI를 국가 우선 과제로 삼는 행정명령에 서명했습니다.',a:[['안전 연구를 함께 지원','AI 둔화',P('k1')],['연구비를 몰아준다','경제 상승',s=>{s.eco+=3}]]}],
+ '중국':[{y:2015,m:5,t:'중국제조 2025',d:'첨단 제조 강국을 목표로 하는 산업 계획이 발표됐습니다.',a:[['노동자 재교육을 포함','일자리를 지킴',P('i1')],['공장 자동화 우선','경제 상승',s=>{s.eco+=3}]]},{y:2017,m:7,t:'차세대 AI 발전계획',d:'2030년 AI 세계 선도를 목표로 하는 국가 계획입니다.',a:[['국가 심사를 강화','AI 둔화',P('d1')],['전력 질주한다','경제 크게 상승',s=>{s.eco+=4}]]}],
+ '유럽':[{y:2014,m:5,t:'잊힐 권리 판결',d:'유럽 최고 법원이 검색 결과 삭제를 요구할 권리를 인정했습니다.',a:[['데이터 권리를 넓힌다','시민 신뢰 상승',s=>{s.unrest-=3}]  ,['기업 현실을 고려한다','경제 소폭 상승',s=>{s.eco+=2}]]},{y:2019,m:4,t:'신뢰할 수 있는 AI 지침',d:'유럽 전문가 그룹이 AI 윤리 지침을 발표했습니다.',a:[['법제화를 준비','AI 둔화',P('k1')],['권고로 둔다','경제 소폭 상승',s=>{s.eco+=2}]]}],
+ '한국':[{y:2017,m:10,t:'4차산업혁명위원회 출범',d:'대통령 직속 위원회가 출범했습니다.',a:[['재교육부터 챙긴다','일자리를 지킴',P('i1')],['산업 육성부터','경제 상승',s=>{s.eco+=3}]]},{y:2019,m:12,t:'AI 국가전략 발표',d:'정부가 AI 강국을 목표로 전략을 내놓았습니다.',a:[['윤리 기준도 함께','AI 둔화',P('k1')],['반도체에 집중','경제 상승',s=>{s.eco+=3}]]}]
+};
+/* 과거 선택이 돌아오는 사건: [이벤트, 선택 번호, 발생 연도, 뉴스, 효과] */
+const ECHO=[
+ ['딥러닝의 등장',1,2023,'2012년에 시장에 맡긴 대가: 챗봇을 검증할 연구자가 없다',s=>{s.boost=.12;s.boostT=24}],
+ ['세계적 전염병',0,2022,'2020년에 푼 돈이 물가로 돌아왔다',s=>{s.infl+=3}],
+ ['세계적 전염병',1,2024,'2020년 긴축의 상처, 정부를 믿지 않는다',s=>{s.unrest+=7}],
+ ['AI 칩을 중국에 못 팔게 하다',1,2027,'2022년의 중립 덕분에 양쪽에 칩을 판다',s=>{s.eco+=5}],
+ ['AI 칩을 중국에 못 팔게 하다',0,2028,'2022년의 통제가 동맹 공급망을 지켰다',s=>{s.perm.shock-=.2}],
+ ['전쟁과 드론',1,2030,'2022년 안보 AI 기술이 민간으로 풀렸다',s=>{s.eco+=4;s.boost=.1;s.boostT=24}],
+ ['작가·배우 파업',1,2028,'2023년에 외면당한 노동자들이 다시 뭉쳤다',s=>{s.unrest+=10}],
+ ['한국 AI 법 통과',0,2030,'시민 의회가 어려운 합의를 이끌었다',s=>{s.unrest-=6;s.eco+=3}],
+ ['AI 안전 정상회의',1,2032,'2023년의 빈 성명, 아무도 약속을 지키지 않았다',s=>{s.boost=.1;s.boostT=24}]
+];
+function apply(ev,i){const c=ev.a[i];c[2](S);S.eco=clamp(S.eco);S.unrest=clamp(S.unrest);S.ch[ev.t]=i;log(`${ev.t}: ${c[0]}`)}
+function echoes(){ECHO.forEach((e,k)=>{if(S.ch[e[0]]===e[1]&&S.y>=e[2]&&!S.echo.includes(k)){S.echo.push(k);e[4](S);S.eco=clamp(S.eco);recalc();say(e[3]);S.back.push(e[3]);call(Math.floor(R(0,REGIONS.length)),e[3])}})}
+function title(){const a=world(),e=S.eco;return a<30&&e<45?'브레이크 장인':a>60&&e>60?'가속 페달 신봉자':has('i3')?'기본소득 대통령':S.ch['전쟁과 드론']===1?'안보 매파':a<=50&&e>=50?'줄타기 달인':'우왕좌왕 지도자'}
 function take(id){const n=NODES.find(x=>x.id===id);if(has(id)||S.lockd.includes(id))return;S.own.push(id);S.at[id]=S.y;if(n.lock)S.lockd.push(n.lock);recalc();say(`인류 대표, <b>${n.t}</b> 시행`)}
 const HISTORY=[[2010,3,'음성 인식이 조금 좋아졌다. 아무도 관심 없다.'],[2011,2,'AI가 미국 퀴즈쇼에서 인간 챔피언들을 이겼다.'],[2012,6,'연구팀, AI가 유튜브 영상만 보고 고양이를 알아봤다고 발표.'],[2014,6,'“AI가 만든 가짜 사진” 기술(GAN) 논문 화제.'],[2017,6,'연구자들, 논문 “Attention Is All You Need” 발표. 지금의 챗봇이 여기서 나온다.'],[2019,2,'글 쓰는 AI 공개. “악용이 걱정돼 전체 공개는 미룬다.”'],[2020,11,'AI가 단백질 구조 예측의 난제에 큰 진전을 냈다.'],[2022,8,'AI로 만든 그림이 미국 지역 미술대회 디지털 부문 1위. 논란 폭발.'],[2022,11,'대화형 챗봇 출시. 두 달 만에 1억 명이 썼다는 추정.'],[2023,3,'전문가들 공개서한 “거대 AI 실험을 6개월 멈추자.”'],[2023,10,'미국 대통령, AI 안전 행정명령 서명.'],[2024,5,'서울에서 AI 정상회의 개최.'],[2024,10,'노벨 물리학상·화학상이 AI 연구자들에게 돌아갔다.'],[2025,1,'중국 스타트업의 저비용 AI 공개. 미국 반도체주 급락.'],[2026,1,'한국 AI 기본법 시행.']];
 const FUTURE=[
@@ -170,7 +191,7 @@ let S,speed=0,acc=0,bubbles=[],dots=[],over=false,diff=60,home='한국';
 const R=(a,b)=>a+Math.random()*(b-a),clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
 const has=id=>S.own.includes(id),world=()=>REGIONS.reduce((s,r)=>s+r.ai*r.w,0);
 function reset(){
- S={y:2010,m:1,pts:7,eco:40,unrest:12,unemp:6,infl:2,debt:60,ineq:35,ni:0,ei:0,fi:0,own:[],lockd:[],cost:1,shock:1,boost:0,boostT:0,costT:0,stage:0,log:[],at:{},seen:[],pactX:1,perm:{spread:0,unrest:0,shock:0,debt:0},m:{spread:0,eco:0,job:0,fair:0,unrest:0,debt:0,shock:0,pts:0}};
+ S={y:2010,m:1,pts:7,eco:40,unrest:12,unemp:6,infl:2,debt:60,ineq:35,ni:0,ei:0,fi:0,own:[],lockd:[],cost:1,shock:1,boost:0,boostT:0,costT:0,stage:0,log:[],at:{},seen:[],pactX:1,ch:{},echo:[],back:[],q:[...EVENTS,...LOCAL[home]].sort((a,b)=>a.y+a.m/12-b.y-b.m/12),perm:{spread:0,unrest:0,shock:0,debt:0},m:{spread:0,eco:0,job:0,fair:0,unrest:0,debt:0,shock:0,pts:0}};
  REGIONS.forEach(r=>{r.ai=0;r.ms=0});REGIONS[0].ai=1;bubbles=[];calls=[];over=false;HOME[home].f(S);
 }
 function recalc(){
@@ -198,30 +219,30 @@ function spreadNews(){REGIONS.forEach((r,i)=>{
 function tick(){
  S.mt=(S.mt||0)+1;S.mn=S.mn||1;
  S.mn++;if(S.mn>12){S.mn=1;S.y++;S.pts+=2+S.m.pts}
- const y=S.y+S.mn/12,g=y<2016?.05:y<2022?.15:y<2030?.46:.5;
+ const y=S.y+S.mn/12,g=y<2016?.05:y<2022?.15:y<2030?.31:.3;
  if(S.boostT>0){S.boostT--;if(!S.boostT)S.boost=0}
  if(S.costT>0)S.costT--;
- const mult=Math.max(.1,1+1.7*S.m.spread+S.boost);
+ const mult=Math.max(.1,1+1.15*S.m.spread+S.boost);
  REGIONS.forEach((r,i)=>{if(r.ai>0){r.ai=clamp(r.ai+g*mult*(1+r.ai/50)*R(.6,1.4));if(r.ai>12)LINKS[i].forEach(j=>{if(!REGIONS[j].ai&&Math.random()<.07)REGIONS[j].ai=.6})}});
  spreadNews();
  const w=world();
- S.eco=clamp(S.eco+.035+w*.0009+S.m.eco-(S.unrest>70?.12:0)-(S.debt>110?.08:0));
+ S.eco=clamp(S.eco+.06+w*.0009+S.m.eco-(S.unrest>70?.12:0)-(S.debt>110?.08:0));
  const tight=Math.max(0,-S.m.spread-.35);
- if(S.y>=2022)S.eco=clamp(S.eco-tight*.14);
+ if(S.y>=2022)S.eco=clamp(S.eco-tight*.06);
  if(tight>.2&&S.y>=2030&&!S.seen.includes('gap')){S.seen.push('gap');S.eco-=5;say('과한 규제로 인재와 공장이 해외로 떠났다');log('★ 과한 규제로 기술 격차가 벌어졌다');call(6,'인재 유출, 기술 격차 확대')}
  S.unemp=Math.max(3,5+Math.max(0,w-12)*.22*Math.max(.1,1-S.m.job));
  S.infl+=(2-S.infl)*.03;
  S.debt=Math.max(30,S.debt+.03+S.m.debt);
  S.ineq=clamp(S.ineq+(w*.0024)*Math.max(.1,1-S.m.fair)-.012);
- const tgt=((S.unemp-5)*2.3+Math.max(0,S.ineq-35)*.7+(S.infl-2)*3+12)*Math.max(.25,1+S.m.unrest);
+ const tgt=(tight*20+(S.unemp-5)*2.3+Math.max(0,S.ineq-35)*.7+(S.infl-2)*3+12)*Math.max(.25,1+S.m.unrest);
  S.unrest=clamp(S.unrest+(tgt-S.unrest)*.04);
- protests();elections();story();
+ protests();elections();story();echoes();
  const h=HISTORY[S.ni];if(h&&(S.y>h[0]||S.y===h[0]&&S.mn>=h[1])){say(h[2]);S.ni++;bubble(1)}
  else if(S.y>=2024&&Math.random()<.09){const o=FUTURE.map(f=>f(S)).filter(Boolean);say(o[Math.floor(R(0,o.length))])}
  if(Math.random()<.12+Math.min(.1,w*.002))bubble(0);
  if(w>=85)return end('dep');if(S.unrest>=100)return end('riot');if(S.eco<=0)return end('crash');
  if(S.y>=2040)return end(judge());
- const ev=EVENTS[S.ei];if(ev&&(S.y>ev.y||S.y===ev.y&&S.mn>=ev.m)){S.ei++;if(ev.y===2035&&S.m.human){say('사람 승인 규칙이 자율무기 오작동을 막았다');log('★ 자율무기 사고를 막았다');S.unrest-=6;return}S.shock=Math.max(.3,(HOME[home]===HOME['한국']?1.3:1)+S.m.shock);if(window.AUTO)AUTO(ev);else openEvent(ev)}
+ const ev=S.q[S.ei];if(ev&&(S.y>ev.y||S.y===ev.y&&S.mn>=ev.m)){S.ei++;if(ev.y===2035&&S.m.human){say('사람 승인 규칙이 자율무기 오작동을 막았다');log('★ 자율무기 사고를 막았다');S.unrest-=6;return}S.shock=Math.max(.3,(HOME[home]===HOME['한국']?1.3:1)+S.m.shock);if(window.AUTO)AUTO(ev);else openEvent(ev)}
 }
 function protests(){
  const list=[[30,'“AI가 내 일을 가져갔다” 해시태그 확산'],[50,'작가·운전기사·콜센터 노동자 총파업'],[70,'대규모 시위, 도시가 멈췄다'],[85,'데이터센터 앞 러다이트 시위']];
@@ -249,7 +270,7 @@ function layer(h){document.getElementById('box').innerHTML=h;document.getElement
 function closeL(){document.getElementById('layer').classList.remove('on');FIELD=null;speed=prev||1;hud()}
 function openField(f){pause();FIELD=f;layer(`<h2>${f} <span style="float:right;color:var(--gold)">● ${S.pts}</span></h2>`+TREE[f].map(n=>{const st=state(n),p=price(n);return`<button class="node ${st==='have'?'have':''}" ${st==='open'&&S.pts>=p?'':st==='have'?'':'disabled'} onclick="buy('${n.id}')"><em>${st==='have'?'시행 중':st==='locked'?'잠김':'● '+p}</em>${n.t}<small>${n.d}${st==='locked'?' · 반대 정책을 골라 닫힘':''}</small></button>`}).join('')+`<br><button onclick="closeL()">닫기</button>`)}
 function openEvent(ev){pause();window.EV=ev;layer(`<h2>${ev.t}</h2><p>${ev.y}년. ${ev.d}</p>`+ev.a.map((c,i)=>`<button class="choice" onclick="choose(${i})">${c[0]}<small>${c[1]}</small></button>`).join(''))}
-function choose(i){const c=EV.a[i];c[2](S);S.eco=clamp(S.eco);S.unrest=clamp(S.unrest);log(`${EV.t}: ${c[0]}`);closeL()}
+function choose(i){apply(EV,i);closeL()}
 
 const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H,sc,ox,oy;
 function size(){const b=cv.parentElement.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);W=b.width;H=b.height;cv.width=W*d;cv.height=H*d;g.setTransform(d,0,0,d,0,0);sc=Math.min(W/1000,(H-56)/460);ox=(W-1000*sc)/2;oy=56+(H-56-460*sc)/2}
@@ -273,7 +294,7 @@ function hud(){
  document.getElementById('date').textContent=`${S.y}년 ${S.mn||1}월`;document.getElementById('points').textContent=`● ${S.pts}`;
  [['A',world()],['E',S.eco],['U',S.unrest]].forEach(([k,v])=>{document.getElementById('v'+k).textContent=Math.round(v)+'%';document.getElementById('b'+k).style.width=v+'%'});
  [['A',50,world(),-1],['E',diff,S.eco,1],['U',50,S.unrest,-1]].forEach(([k,v,c,dir])=>{document.getElementById('t'+k).style.left=v+'%';const lb=document.getElementById('l'+k);lb.style.left=v+'%';lb.textContent=`▲ 목표 ${v}`;const gap=Math.ceil((v-c)*dir),e=document.getElementById('v'+k);e.innerHTML+=gap>0?` <small style="color:#ff6b81">${dir>0?gap+' 부족':gap+' 초과'}</small>`:` <small style="color:#46d6a8">목표 ${v} 달성</small>`});
- document.getElementById('stats').innerHTML=`실업 <b>${S.unemp.toFixed(1)}%</b> 물가 <b>${S.infl.toFixed(1)}%</b> 부채 <b>${Math.round(S.debt)}%</b> 불평등 <b>${Math.round(S.ineq)}</b>`;
+ document.getElementById('stats').innerHTML=`일자리 잃은 사람 <b>${S.unemp.toFixed(1)}%</b> 물건값 오름 <b>${S.infl.toFixed(1)}%</b> 나라빚 <b>${Math.round(S.debt)}%</b> 빈부격차 <b>${Math.round(S.ineq)}</b>`;
  document.getElementById('fields').innerHTML=Object.keys(TREE).map(f=>`<button onclick="openField('${f}')">${f}<small>${TREE[f].filter(n=>has(n.id)).length}/4</small></button>`).join('');
  document.querySelectorAll('#speed button').forEach(b=>b.classList.toggle('on',+b.dataset.s===speed));
 }
@@ -290,12 +311,12 @@ const ENDS={
 function end(k){
  over=true;speed=0;const w=Math.round(world()),[t,d]=ENDS[k],build=Object.keys(TREE).map(f=>[f,TREE[f].filter(n=>has(n.id)).length]).sort((a,b)=>b[1]-a[1])[0][0];
  window.LAST=k;if(window.AUTO)return;
- const share=`${home}에서 시작, ${build} 빌드로 ${S.y}년: ${t}. AI ${w}% · 경제 ${Math.round(S.eco)} · 불만 ${Math.round(S.unrest)}`;
+ const name=title(),share=`[${name}] ${home}에서 시작, ${build} 빌드로 ${S.y}년: ${t}. AI ${w}% · 경제 ${Math.round(S.eco)} · 불만 ${Math.round(S.unrest)}`;
  window.SHARE=share;
- layer(`<h1>${t}</h1><p>${d}</p><p><b>${share}</b></p><p style="font-size:13px">${S.log.join('<br>')}</p><button class="main" onclick="menu()">다시 2010년으로</button> <button onclick="navigator.clipboard&&navigator.clipboard.writeText(SHARE);this.textContent='복사됨'">결과 복사</button><small class="note">과거는 실제 사건을 각색했고, 미래와 수치는 게임 속 가상입니다. 예측이 아닙니다.</small>`);
+ layer(`<h1>${t}</h1><p>${d}</p><p><b>${share}</b></p>${S.back.length?`<p><b>그때의 선택이 돌아왔다</b><br>${S.back.join('<br>')}</p>`:''}<p style="font-size:13px">${S.log.join('<br>')}</p><button class="main" onclick="menu()">다시 2010년으로</button> <button onclick="navigator.clipboard&&navigator.clipboard.writeText(SHARE);this.textContent='복사됨'">결과 복사</button><small class="note">과거는 실제 사건을 각색했고, 미래와 수치는 게임 속 가상입니다. 예측이 아닙니다.</small>`);
 }
 function menu(){
- layer(`<h1>인류 주식회사</h1><p>2010년. 작은 연구실에서 무언가가 시작됩니다. 중요한 순간마다 하나를 고르세요. 실제 AI 역사가 지나가고, 2026년부터는 당신의 선택이 만드는 가상의 미래입니다.</p>
+ layer(`<h1>인류 주식회사</h1><p>2010년. 작은 연구실에서 무언가가 시작됩니다. AI가 세상을 다 덮기 전에, 중요한 순간마다 둘 중 하나만 고르세요. 어려운 지식은 필요 없어요. 경제는 살리고, AI는 절반 아래로, 사람들 화는 낮게!</p>
  <div class="pick"><b>시작 나라</b><br>${Object.keys(HOME).map(k=>`<button class="${k===home?'on':''}" onclick="home='${k}';menu()">${k}</button>`).join('')}<br><small style="color:var(--dim)">${HOME[home].d}</small></div>
  <div class="pick"><b>목표 경제</b><br>${[[50,'쉬움'],[60,'보통'],[70,'어려움']].map(([v,l])=>`<button class="${v===diff?'on':''}" onclick="diff=${v};menu()">${l} ${v}</button>`).join('')}<br><small style="color:var(--dim)">승리: AI 50 이하, 경제 ${diff} 이상, 불만 50 이하</small></div>
  <button class="main" onclick="start()">2010년 시작</button>`);

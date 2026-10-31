@@ -41,7 +41,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%}
 .node.have{border-color:var(--human)}.node.have em{color:var(--human)}
 .pick{margin-bottom:12px}.pick button{margin:3px 3px 0 0}
 small.note{color:var(--dim);display:block;margin-top:12px}
-#fields,#points{display:none}
+#fields{display:none}
+#acts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px 14px max(10px,env(safe-area-inset-bottom))}#acts button{padding:8px 2px;font-size:14px}#acts small{display:block;color:var(--gold);font-size:11px}
 #news,#date{display:none}
 </style>
 </head>
@@ -58,6 +59,7 @@ small.note{color:var(--dim);display:block;margin-top:12px}
  <div id="mapwrap"><canvas id="c"></canvas></div>
  <div id="news"></div>
  <div id="fields"></div>
+ <div id="acts"></div>
 </div>
 <div class="layer" id="layer"><div class="box" id="box"></div></div>
 <script>
@@ -156,6 +158,9 @@ const ECHO=[
 function apply(ev,i){const c=ev.a[i];c[2](S);S.eco=clamp(S.eco);S.unrest=clamp(S.unrest);S.ch[ev.t]=i;log(`${ev.t}: ${c[0]}`)}
 function echoes(){ECHO.forEach((e,k)=>{if(S.ch[e[0]]===e[1]&&S.y>=e[2]&&!S.echo.includes(k)){S.echo.push(k);e[4](S);S.eco=clamp(S.eco);recalc();say(e[3]);S.back.push(e[3]);call(Math.floor(R(0,REGIONS.length)),e[3])}})}
 function title(){const a=world(),e=S.eco;return a<30&&e<45?'브레이크 장인':a>60&&e>60?'가속 페달 신봉자':has('i3')?'기본소득 대통령':S.ch['전쟁과 드론']===1?'안보 매파':a<=50&&e>=50?'줄타기 달인':'우왕좌왕 지도자'}
+const CARDS=[['긴급 제동','2년간 AI 느리게',6,s=>{s.boost=-.3;s.boostT=24}],['경기 살리기','경제 +5, 나라빚 +8',6,s=>{s.eco=clamp(s.eco+5);s.debt+=8}],['민심 달래기','불만 −12',4,s=>{s.unrest=clamp(s.unrest-12)}]];
+function card(i){const c=CARDS[i];if(over||S.pts<c[2])return;S.pts-=c[2];c[3](S);say(`긴급 명령: ${c[0]}`);hud()}
+function forecast(){const w=world(),h=S.hist;if(h.length<12||w<8)return'';const v=w-h[h.length-12];if(v<=.05)return'';const y=S.y+(85-w)/v;return y>=2040?'':Math.floor(y)}
 function take(id){const n=NODES.find(x=>x.id===id);if(has(id)||S.lockd.includes(id))return;S.own.push(id);S.at[id]=S.y;if(n.lock)S.lockd.push(n.lock);recalc();say(`인류 대표, <b>${n.t}</b> 시행`)}
 const HISTORY=[[2010,3,'음성 인식이 조금 좋아졌다. 아무도 관심 없다.'],[2011,2,'AI가 미국 퀴즈쇼에서 인간 챔피언들을 이겼다.'],[2012,6,'연구팀, AI가 유튜브 영상만 보고 고양이를 알아봤다고 발표.'],[2014,6,'“AI가 만든 가짜 사진” 기술(GAN) 논문 화제.'],[2017,6,'연구자들, 논문 “Attention Is All You Need” 발표. 지금의 챗봇이 여기서 나온다.'],[2019,2,'글 쓰는 AI 공개. “악용이 걱정돼 전체 공개는 미룬다.”'],[2020,11,'AI가 단백질 구조 예측의 난제에 큰 진전을 냈다.'],[2022,8,'AI로 만든 그림이 미국 지역 미술대회 디지털 부문 1위. 논란 폭발.'],[2022,11,'대화형 챗봇 출시. 두 달 만에 1억 명이 썼다는 추정.'],[2023,3,'전문가들 공개서한 “거대 AI 실험을 6개월 멈추자.”'],[2023,10,'미국 대통령, AI 안전 행정명령 서명.'],[2024,5,'서울에서 AI 정상회의 개최.'],[2024,10,'노벨 물리학상·화학상이 AI 연구자들에게 돌아갔다.'],[2025,1,'중국 스타트업의 저비용 AI 공개. 미국 반도체주 급락.'],[2026,1,'한국 AI 기본법 시행.']];
 const FUTURE=[
@@ -191,7 +196,7 @@ let S,speed=0,acc=0,bubbles=[],dots=[],over=false,diff=60,home='한국';
 const R=(a,b)=>a+Math.random()*(b-a),clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
 const has=id=>S.own.includes(id),world=()=>REGIONS.reduce((s,r)=>s+r.ai*r.w,0);
 function reset(){
- S={y:2010,m:1,pts:7,eco:40,unrest:12,unemp:6,infl:2,debt:60,ineq:35,ni:0,ei:0,fi:0,own:[],lockd:[],cost:1,shock:1,boost:0,boostT:0,costT:0,stage:0,log:[],at:{},seen:[],pactX:1,ch:{},echo:[],back:[],q:[...EVENTS,...LOCAL[home]].sort((a,b)=>a.y+a.m/12-b.y-b.m/12),perm:{spread:0,unrest:0,shock:0,debt:0},m:{spread:0,eco:0,job:0,fair:0,unrest:0,debt:0,shock:0,pts:0}};
+ S={y:2010,m:1,pts:7,eco:40,unrest:12,unemp:6,infl:2,debt:60,ineq:35,ni:0,ei:0,fi:0,own:[],lockd:[],cost:1,shock:1,boost:0,boostT:0,costT:0,stage:0,log:[],at:{},seen:[],pactX:1,hist:[],alarm:0,flash:0,ch:{},echo:[],back:[],q:[...EVENTS,...LOCAL[home]].sort((a,b)=>a.y+a.m/12-b.y-b.m/12),perm:{spread:0,unrest:0,shock:0,debt:0},m:{spread:0,eco:0,job:0,fair:0,unrest:0,debt:0,shock:0,pts:0}};
  REGIONS.forEach(r=>{r.ai=0;r.ms=0});REGIONS[0].ai=1;bubbles=[];calls=[];over=false;HOME[home].f(S);
 }
 function recalc(){
@@ -225,7 +230,8 @@ function tick(){
  const mult=Math.max(.1,1+1.15*S.m.spread+S.boost);
  REGIONS.forEach((r,i)=>{if(r.ai>0){r.ai=clamp(r.ai+g*mult*(1+r.ai/50)*R(.6,1.4));if(r.ai>12)LINKS[i].forEach(j=>{if(!REGIONS[j].ai&&Math.random()<.07)REGIONS[j].ai=.6})}});
  spreadNews();
- const w=world();
+ const w=world();S.hist.push(w);
+ [25,50,70].forEach((v,i)=>{if(w>=v&&S.alarm<=i){S.alarm=i+1;S.flash=1;say(`경고: 세계의 ${v}%에 AI가 퍼졌습니다`)}});
  S.eco=clamp(S.eco+.06+w*.0009+S.m.eco-(S.unrest>70?.12:0)-(S.debt>110?.08:0));
  const tight=Math.max(0,-S.m.spread-.35);
  if(S.y>=2022)S.eco=clamp(S.eco-tight*.06);
@@ -258,7 +264,7 @@ function elections(){
  if(lose){log(`${a} 정권 교체 (${f})`);S.costT=18;if(!S.m.shield&&S.own.length){const id=S.own[Math.floor(R(0,S.own.length))];if(!S.own.some(o=>NODES.find(n=>n.id===o).req===id)){S.own=S.own.filter(o=>o!==id);recalc();say(`새 정부, ${NODES.find(n=>n.id===id).t} 폐지`)}}}
 }
 function log(t){if(S.log.length<14)S.log.push(`${S.y} ${t}`)}
-function bubble(g){return;const a=REGIONS.filter(x=>x.ai>0);if(!a.length)return;const r=a[Math.floor(R(0,a.length))],e=r.p[0];bubbles.push({x:e[0]+R(-e[2],e[2])*.6,y:e[1]+R(-e[3],e[3])*.6,life:7,v:g?4:2,gold:!!g})}
+function bubble(g){const a=REGIONS.filter(x=>x.ai>0);if(!a.length)return;const r=a[Math.floor(R(0,a.length))],e=r.p[0];bubbles.push({x:e[0]+R(-e[2],e[2])*.6,y:e[1]+R(-e[3],e[3])*.6,life:7,v:g?4:2,gold:!!g})}
 let headline='';
 function say(t){headline=t.replace(/<[^>]+>/g,'')}
 const price=n=>Math.ceil(n.c*S.cost*(S.costT>0?1.3:1)*(n.id==='s4'?S.pactX:1));
@@ -277,7 +283,9 @@ function size(){const b=cv.parentElement.getBoundingClientRect(),d=Math.min(devi
 function build(){for(let x=90;x<960;x+=9)for(let y=70;y<445;y+=9){const yy=y+(x%2?4:0),n=Math.sin(x*.05)*.1+Math.cos(yy*.06)*.1;
  const order=[6,...REGIONS.keys()],i=order.find(i=>REGIONS[i].p.some(([a,b,c,d])=>((x-a)/c)**2+((yy-b)/d)**2<1+n));if(i!==undefined)dots.push({x,y:yy,i,s:Math.random(),t:Math.random()})}}
 function draw(){
- g.clearRect(0,0,W,H);const u=S.unrest/100;
+ g.clearRect(0,0,W,H);const u=S.unrest/100,wn=world();
+ const pulse=Math.max(S.flash||0,wn>50?(wn-50)/70*(.6+.4*Math.sin(performance.now()/350)):0);S.flash=Math.max(0,(S.flash||0)-.012);
+ if(pulse>0){const q=g.createRadialGradient(W/2,H/2,H*.35,W/2,H/2,W*.65);q.addColorStop(0,'#ff000000');q.addColorStop(1,`rgba(255,30,60,${Math.min(.5,pulse*.5)})`);g.fillStyle=q;g.fillRect(0,0,W,H)}
  g.textAlign='center';g.fillStyle='#fff';g.font=`bold ${Math.max(24,34*sc)}px sans-serif`;g.fillText(`${S.y}년 ${S.mn||1}월`,W/2,Math.max(28,36*sc));
  if(headline){g.font=`bold ${Math.max(14,17*sc)}px sans-serif`;let t='속보  '+headline;while(g.measureText(t).width>W-24&&t.length>6)t=t.slice(0,-2);g.fillStyle='#ffc857';g.fillText(t,W/2,Math.max(52,62*sc))}
  dots.forEach(d=>{const r=REGIONS[d.i],on=r.ai/100>d.s,riot=u>.3&&on&&d.t<(u-.3)*.8;g.fillStyle=riot?'#ffb02e':on?'#ff4d6d':'#3a4c64';g.beginPath();g.arc(ox+d.x*sc,oy+d.y*sc,Math.max(1.3,3.4*sc),0,7);g.fill()});
@@ -294,8 +302,9 @@ function hud(){
  document.getElementById('date').textContent=`${S.y}년 ${S.mn||1}월`;document.getElementById('points').textContent=`● ${S.pts}`;
  [['A',world()],['E',S.eco],['U',S.unrest]].forEach(([k,v])=>{document.getElementById('v'+k).textContent=Math.round(v)+'%';document.getElementById('b'+k).style.width=v+'%'});
  [['A',50,world(),-1],['E',diff,S.eco,1],['U',50,S.unrest,-1]].forEach(([k,v,c,dir])=>{document.getElementById('t'+k).style.left=v+'%';const lb=document.getElementById('l'+k);lb.style.left=v+'%';lb.textContent=`▲ 목표 ${v}`;const gap=Math.ceil((v-c)*dir),e=document.getElementById('v'+k);e.innerHTML+=gap>0?` <small style="color:#ff6b81">${dir>0?gap+' 부족':gap+' 초과'}</small>`:` <small style="color:#46d6a8">목표 ${v} 달성</small>`});
- document.getElementById('stats').innerHTML=`일자리 잃은 사람 <b>${S.unemp.toFixed(1)}%</b> 물건값 오름 <b>${S.infl.toFixed(1)}%</b> 나라빚 <b>${Math.round(S.debt)}%</b> 빈부격차 <b>${Math.round(S.ineq)}</b>`;
+ const fc=forecast();document.getElementById('stats').innerHTML=`${fc?`<b style="color:#ff6b81">이대로면 ${fc}년 AI 장악</b> `:''}일자리 잃은 사람 <b>${S.unemp.toFixed(1)}%</b> 물건값 오름 <b>${S.infl.toFixed(1)}%</b> 나라빚 <b>${Math.round(S.debt)}%</b> 빈부격차 <b>${Math.round(S.ineq)}</b>`;
  document.getElementById('fields').innerHTML=Object.keys(TREE).map(f=>`<button onclick="openField('${f}')">${f}<small>${TREE[f].filter(n=>has(n.id)).length}/4</small></button>`).join('');
+ document.getElementById('acts').innerHTML=CARDS.map((c,i)=>`<button ${S.pts<c[2]?'disabled':''} onclick="card(${i})">${c[0]} ● ${c[2]}<small>${c[1]}</small></button>`).join('');
  document.querySelectorAll('#speed button').forEach(b=>b.classList.toggle('on',+b.dataset.s===speed));
 }
 document.querySelectorAll('#speed button').forEach(b=>b.onclick=()=>{if(!over){speed=+b.dataset.s;if(speed)prev=speed;hud()}});
@@ -316,7 +325,7 @@ function end(k){
  layer(`<h1>${t}</h1><p>${d}</p><p><b>${share}</b></p>${S.back.length?`<p><b>그때의 선택이 돌아왔다</b><br>${S.back.join('<br>')}</p>`:''}<p style="font-size:13px">${S.log.join('<br>')}</p><button class="main" onclick="menu()">다시 2010년으로</button> <button onclick="navigator.clipboard&&navigator.clipboard.writeText(SHARE);this.textContent='복사됨'">결과 복사</button><small class="note">과거는 실제 사건을 각색했고, 미래와 수치는 게임 속 가상입니다. 예측이 아닙니다.</small>`);
 }
 function menu(){
- layer(`<h1>인류 주식회사</h1><p>2010년. 작은 연구실에서 무언가가 시작됩니다. AI가 세상을 다 덮기 전에, 중요한 순간마다 둘 중 하나만 고르세요. 어려운 지식은 필요 없어요. 경제는 살리고, AI는 절반 아래로, 사람들 화는 낮게!</p>
+ layer(`<h1>인류 주식회사</h1><p>2010년. 작은 연구실에서 무언가가 시작됩니다. AI가 세상을 다 덮기 전에, 중요한 순간마다 둘 중 하나만 고르세요. 지도에 뜨는 동그라미를 눌러 시민의 힘을 모으면 아래 긴급 명령을 쓸 수 있어요. 어려운 지식은 필요 없어요. 경제는 살리고, AI는 절반 아래로, 사람들 화는 낮게!</p>
  <div class="pick"><b>시작 나라</b><br>${Object.keys(HOME).map(k=>`<button class="${k===home?'on':''}" onclick="home='${k}';menu()">${k}</button>`).join('')}<br><small style="color:var(--dim)">${HOME[home].d}</small></div>
  <div class="pick"><b>목표 경제</b><br>${[[50,'쉬움'],[60,'보통'],[70,'어려움']].map(([v,l])=>`<button class="${v===diff?'on':''}" onclick="diff=${v};menu()">${l} ${v}</button>`).join('')}<br><small style="color:var(--dim)">승리: AI 50 이하, 경제 ${diff} 이상, 불만 50 이하</small></div>
  <button class="main" onclick="start()">2010년 시작</button>`);

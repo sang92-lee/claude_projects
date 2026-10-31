@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>인류 주식회사</title>
+<style>
+:root{--bg:#0d1420;--panel:#172232;--line:#2b3b52;--ink:#e8eef6;--dim:#93a4ba;--ai:#ff4d6d;--human:#46d6a8;--gold:#ffc857}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif;overflow:hidden}
+#app{height:100%;display:flex;flex-direction:column;max-width:1100px;margin:auto}
+header{display:flex;align-items:center;gap:12px;padding:10px 14px}
+#date{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+#speed{margin-left:auto;display:flex;gap:4px}
+#points{color:var(--gold);font-weight:700;white-space:nowrap}
+button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
+button.on{border-color:var(--gold);color:var(--gold)}
+button:disabled{opacity:.42;cursor:default}
+#gauges{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 14px 8px}
+.g{font-size:12px;color:var(--dim)}.g b{float:right;color:var(--ink)}
+.bar{height:7px;background:#0a0f18;border-radius:4px;overflow:hidden;margin-top:3px}.bar i{display:block;height:100%;transition:width .3s}
+#mapwrap{flex:1;min-height:0;position:relative}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+#news{padding:7px 14px;font-size:14px;background:#0a0f18;border-top:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#news span{color:var(--gold);margin-right:7px}
+#target{padding:7px 14px 0;font-size:13px;color:var(--dim)}#target b{color:var(--ink)}
+#cards{display:flex;gap:8px;overflow-x:auto;padding:7px 14px max(10px,env(safe-area-inset-bottom))}
+.card{flex:0 0 136px;text-align:left;padding:9px;height:92px;display:flex;flex-direction:column}
+.card b{font-size:14px}.card small{color:var(--dim);font-size:11.5px;line-height:1.35;margin-top:3px;flex:1}.card em{font-style:normal;color:var(--gold);font-size:12px}
+#screen{position:fixed;inset:0;background:#0009;display:flex;align-items:center;justify-content:center;padding:16px;z-index:5}
+#box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;max-width:440px;width:100%;line-height:1.65;max-height:90vh;overflow:auto}
+#box h1{margin:0 0 10px;font-size:25px}#box p{margin:0 0 14px;color:#cfd9e6}
+#box .main{background:var(--human);color:#06241b;border:0;font-weight:700;padding:10px 18px}
+#box small{color:var(--dim);display:block;margin-top:12px}
+</style>
+</head>
+<body>
+<div id="app">
+ <header><div id="date"></div><div id="points"></div>
+  <div id="speed"><button data-s="0">멈춤</button><button data-s="1">보통</button><button data-s="3">빠르게</button></div></header>
+ <div id="gauges">
+  <div class="g">AI 퍼짐 <b id="vA"></b><div class="bar"><i id="bA" style="background:var(--ai)"></i></div></div>
+  <div class="g">시민 지지 <b id="vS"></b><div class="bar"><i id="bS" style="background:var(--human)"></i></div></div>
+  <div class="g">경제 <b id="vE"></b><div class="bar"><i id="bE" style="background:var(--gold)"></i></div></div>
+ </div>
+ <div id="mapwrap"><canvas id="c"></canvas></div>
+ <div id="news"></div>
+ <div id="target"></div>
+ <div id="cards"></div>
+</div>
+<div id="screen"><div id="box"></div></div>
+<script>
+const REGIONS=[
+ {n:'북미',p:[[175,150,92,62],[225,215,48,34]],w:.12},
+ {n:'남미',p:[[315,345,48,86]],w:.08},
+ {n:'유럽',p:[[500,135,56,38]],w:.1},
+ {n:'아프리카',p:[[525,290,68,92]],w:.18},
+ {n:'중동',p:[[610,205,40,30]],w:.06},
+ {n:'남아시아',p:[[705,245,45,42]],w:.2},
+ {n:'동아시아',p:[[790,165,85,55],[845,262,38,28]],w:.2},
+ {n:'오세아니아',p:[[885,368,48,30]],w:.06}
+];
+const LINKS={0:[1,2,6],1:[0,3],2:[0,3,4,6],3:[1,2,4],4:[2,3,5],5:[4,6],6:[0,2,5,7],7:[5,6]};
+const NEWS=[
+ [2010,3,'음성 인식이 조금 좋아졌다. 아무도 관심 없다.'],
+ [2012,9,'연구팀, 사진 속 고양이를 사람보다 잘 찾았다.'],
+ [2014,6,'“AI가 그린 그림”이 잠깐 화제. 손가락이 일곱 개다.'],
+ [2016,3,'AI가 바둑 세계 챔피언을 꺾었다. 사람들이 처음 놀란다.'],
+ [2018,5,'번역기가 쓸 만해졌다. 번역가들이 긴장한다.'],
+ [2020,6,'글 쓰는 AI 공개. “위험해서 다 공개는 못 한다”고 한다.'],
+ [2022,11,'대화형 챗봇 출시. 두 달 만에 1억 명이 쓴다.'],
+ [2023,4,'대학생: “과제가 사라졌다.” 교수: “과제가 전부 똑같다.”'],
+ [2025,2,'회사원: “보고서는 AI가 쓰고 AI가 읽는다.”'],
+ [2027,6,'AI가 AI를 개선하기 시작했다는 소문이 돈다.'],
+ [2030,1,'고객센터에 사람이 있는지 아무도 모른다.'],
+ [2034,8,'AI 판사 도입 논쟁. “적어도 점심 전후로 판결이 안 달라진다.”'],
+ [2038,3,'아이들이 묻는다. “옛날엔 숙제를 직접 했어?”']
+];
+const CARDS=[
+ {k:'camp',t:'공공 캠페인',d:'“잠깐, 이거 괜찮을까?” 지지 +7',c:2,use(){S.sup+=7}},
+ {k:'law',t:'지역 규제법',d:'선택 지역 저항 +28. 지지·경제 소폭 하락',c:4,target:1,use(r){r.reg+=28;S.sup-=3;S.eco-=1}},
+ {k:'edu',t:'AI 교육',d:'모든 지역에서 맹신이 줄어 퍼짐이 느려짐',c:6,use(){S.edu+=1;S.sup+=3}},
+ {k:'labor',t:'노동 보호',d:'일자리를 지켜 지지 +14',c:5,use(){S.sup+=14;S.eco-=3}},
+ {k:'safe',t:'안전 연구',d:'폭주를 늦춤. 2022년 이후 특히 효과적',c:8,use(){S.safe+=1}},
+ {k:'pact',t:'국제 협약',d:'전 지역 저항 +14. 경쟁국 불만으로 경제 하락',c:12,use(){REGIONS.forEach(r=>r.reg+=14);S.eco-=6;S.sup-=3}},
+ {k:'ban',t:'기술 금지',d:'선택 지역 AI −35, 저항 +40. 지지 크게 하락',c:14,target:1,use(r){r.ai=Math.max(0,r.ai-35);r.reg+=40;S.sup-=16;S.eco-=9}}
+];
+const NAME=['2010','2011'];
+let S,sel=6,speed=0,acc=0,bubbles=[],dots=[],over=false;
+const R=(a,b)=>a+Math.random()*(b-a),clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
+function reset(){
+ S={y:2010,m:1,pts:6,sup:60,eco:60,edu:0,safe:0,ni:0};
+ REGIONS.forEach(r=>{r.ai=0;r.reg=0});REGIONS[0].ai=1;bubbles=[];over=false;
+}
+const world=()=>REGIONS.reduce((s,r)=>s+r.ai*r.w,0);
+function growth(){const y=S.y+S.m/12;return y<2016?.035:y<2022?.11:y<2030?.62:.82}
+function tick(){
+ S.m++;if(S.m>12){S.m=1;S.y++;S.pts+=2}
+ const g=growth(),sf=Math.pow(.84,S.safe)*Math.pow(.88,S.edu);
+ REGIONS.forEach((r,i)=>{
+  if(r.ai>0){r.ai=clamp(r.ai+g*sf*(1+r.ai/45)*(1-Math.min(.88,r.reg/115))*R(.6,1.4));r.reg=Math.max(0,r.reg-.1)
+   if(r.ai>14)LINKS[i].forEach(j=>{if(REGIONS[j].ai===0&&Math.random()<.06)REGIONS[j].ai=.6})}
+ });
+ const w=world();
+ const avgReg=REGIONS.reduce((s,r)=>s+r.reg*r.w,0);
+ if(S.y>=2022)S.sup-=avgReg*.0028;
+ S.sup-=w>45?.1:0;S.sup=clamp(S.sup+.03);
+ S.eco=clamp(S.eco+(.05+w*.0012-avgReg*.0009));
+ const n=NEWS[S.ni];
+ if(n&&(S.y>n[0]||S.y===n[0]&&S.m>=n[1])){say(n[2]);S.ni++;bubble(.9)}
+ if(Math.random()<.1+Math.min(.13,w*.003))bubble(0);
+ if(w>=85)return end('dep');
+ if(S.sup<=0)return end('fired');
+ if(S.eco<=0)return end('crash');
+ if(S.y>=2040)return end(w<45?'keep':'co');
+}
+function bubble(g){
+ const r=REGIONS.filter(x=>x.ai>0)[Math.floor(R(0,REGIONS.filter(x=>x.ai>0).length))]||REGIONS[0],e=r.p[0];
+ bubbles.push({x:e[0]+R(-e[2],e[2])*.6,y:e[1]+R(-e[3],e[3])*.6,life:7,v:g?4:2,gold:!!g});
+}
+function say(t){document.getElementById('news').innerHTML=`<span>속보</span>${t}`}
+
+const cv=document.getElementById('c'),g=cv.getContext('2d');let W,H,sc,ox,oy;
+function size(){const b=cv.parentElement.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);W=b.width;H=b.height;cv.width=W*d;cv.height=H*d;g.setTransform(d,0,0,d,0,0);sc=Math.min(W/1000,H/460);ox=(W-1000*sc)/2;oy=(H-460*sc)/2}
+function build(){
+ for(let x=90;x<960;x+=9)for(let y=70;y<445;y+=9){
+  const yy=y+(x%2?4:0);
+  REGIONS.forEach((r,i)=>{if(r.p.some(([a,b,c,d])=>{const n=Math.sin(x*.05)*.1+Math.cos(yy*.06)*.1;return((x-a)/c)**2+((yy-b)/d)**2<1+n}))dots.push({x,y:yy,i,s:Math.random()})});
+ }
+}
+function draw(){
+ g.clearRect(0,0,W,H);
+ dots.forEach(d=>{const r=REGIONS[d.i],on=r.ai/100>d.s;g.fillStyle=on?'#ff4d6d':(r.reg>30?'#3db894':d.i===sel?'#5f7796':'#3a4c64');g.beginPath();g.arc(ox+d.x*sc,oy+d.y*sc,Math.max(1.3,3.4*sc),0,7);g.fill()});
+ REGIONS.forEach((r,i)=>{const e=r.p[0];g.font=`${Math.max(11,14*sc)}px sans-serif`;g.textAlign='center';g.fillStyle=i===sel?'#fff':'#aebdd0';g.fillText(`${r.n} ${Math.round(r.ai)}%`,ox+e[0]*sc,oy+(e[1]-e[3]-7)*sc)});
+ bubbles.forEach(b=>{const x=ox+b.x*sc,y=oy+b.y*sc;g.fillStyle=b.gold?'#ffc857':'#6fc3ff';g.globalAlpha=Math.min(1,b.life);g.beginPath();g.arc(x,y,13,0,7);g.fill();g.fillStyle='#0d1420';g.font='bold 13px sans-serif';g.textAlign='center';g.fillText('+'+b.v,x,y+4.5);g.globalAlpha=1});
+}
+cv.addEventListener('click',e=>{
+ const b=cv.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;
+ for(let i=0;i<bubbles.length;i++){const q=bubbles[i];if(Math.hypot(ox+q.x*sc-x,oy+q.y*sc-y)<24){S.pts+=q.v;bubbles.splice(i,1);hud();return}}
+ const mx=(x-ox)/sc,my=(y-oy)/sc;let best=-1,bd=1e9;dots.forEach(d=>{const q=(d.x-mx)**2+(d.y-my)**2;if(q<bd){bd=q;best=d.i}});
+ if(bd<2500){sel=best;hud()}
+});
+function hud(){
+ const w=world();
+ document.getElementById('date').textContent=`${S.y}년 ${S.m}월`;
+ document.getElementById('points').textContent=`● ${S.pts}`;
+ [['A',w],['S',S.sup],['E',S.eco]].forEach(([k,v])=>{document.getElementById('v'+k).textContent=Math.round(v)+'%';document.getElementById('b'+k).style.width=v+'%'});
+ document.getElementById('target').innerHTML=`선택 지역: <b>${REGIONS[sel].n}</b> · 저항 ${Math.round(REGIONS[sel].reg)} (지도를 눌러 변경)`;
+ document.querySelectorAll('.card').forEach((b,i)=>b.disabled=S.pts<CARDS[i].c);
+ document.querySelectorAll('#speed button').forEach(b=>b.classList.toggle('on',+b.dataset.s===speed));
+}
+function play(i){const c=CARDS[i];if(S.pts<c.c||over)return;S.pts-=c.c;c.use(REGIONS[sel]);S.sup=clamp(S.sup);S.eco=clamp(S.eco);REGIONS.forEach(r=>r.reg=clamp(r.reg));say(`인류 대표, <b>${c.t}</b> 시행${c.target?' — '+REGIONS[sel].n:''}`);hud()}
+document.getElementById('cards').innerHTML=CARDS.map((c,i)=>`<button class="card" onclick="play(${i})"><b>${c.t}</b><small>${c.d}</small><em>● ${c.c}</em></button>`).join('');
+document.querySelectorAll('#speed button').forEach(b=>b.onclick=()=>{if(!over){speed=+b.dataset.s;hud()}});
+
+const ENDS={
+ dep:['인류, 편해졌다','AI가 세상의 85%에 스며들었습니다. 아무도 저항하지 않습니다. 너무 편하거든요.'],
+ fired:['당신은 해임되었습니다','“왜 편한 걸 막아요?” 시민들이 인류 대표를 갈아치웠습니다. 새 대표는 AI입니다.'],
+ crash:['경제가 멈췄다','AI는 막았지만 공장도 시장도 함께 멈췄습니다. 경쟁국은 멀리 앞서갑니다.'],
+ keep:['인간의 손을 지켰다','2040년, 사람들은 아직 직접 씁니다. 가끔 불편하고, 대체로 뿌듯합니다.'],
+ co:['어색한 공존','2040년, AI는 어디에나 있지만 사람이 마지막 결정을 합니다. 야근은 조금 줄었습니다.']
+};
+function end(k){
+ over=true;speed=0;const w=Math.round(world()),[t,d]=ENDS[k],share=`나는 ${S.y}년, AI 퍼짐 ${w}%로 끝났다: ${t}`;
+ show(`<h1>${t}</h1><p>${d}</p><p><b>${S.y}년 ${S.m}월</b> · AI ${w}% · 지지 ${Math.round(S.sup)}% · 경제 ${Math.round(S.eco)}%</p><p>${share}</p><button class="main" onclick="start()">다시 2010년으로</button> <button onclick="navigator.clipboard&&navigator.clipboard.writeText('${share}');this.textContent='복사됨'">결과 복사</button><small>역사적 사건을 각색했고, 수치는 게임용 가상 값입니다.</small>`);
+}
+function show(h){document.getElementById('box').innerHTML=h;document.getElementById('screen').style.display='flex'}
+function start(){reset();document.getElementById('screen').style.display='none';speed=1;say('2010년. 아무도 AI를 걱정하지 않습니다. 아직은.');hud()}
+let last=0;
+function loop(ts){const dt=Math.min(.1,(ts-last)/1000||0);last=ts;
+ if(speed&&!over){acc+=dt*speed;if(acc>.55){acc=0;tick();hud()}bubbles.forEach(b=>b.life-=dt);bubbles=bubbles.filter(b=>b.life>0)}
+ draw();requestAnimationFrame(loop)}
+addEventListener('resize',size);
+reset();size();build();hud();requestAnimationFrame(loop);
+show(`<h1>인류 주식회사</h1><p>2010년. 작은 연구실에서 무언가가 시작됩니다. 당신은 인류 대표입니다. AI가 세상을 다 덮기 전에 늦추세요.</p><p>문제는, 사람들이 AI를 <b>너무 좋아한다</b>는 겁니다. 너무 세게 막으면 당신이 해임됩니다.</p><p>지도의 동그라미를 눌러 시민 관심을 모으고, 카드를 쓰세요. 2040년까지 버티면 끝납니다.</p><button class="main" onclick="start()">2010년 시작</button>`);
+</script>
+</body>
+</html>

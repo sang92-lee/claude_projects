@@ -223,7 +223,11 @@ const A=COL.map((c,i)=>{const g=new THREE.Group(),mat=new THREE.MeshLambertMater
  if(i==7){add(S(.13),or,0,1.19,.5,1.3,.45,1);add(S(.1),mat,.1,1.84,0);tail=add(C(.13,.26),mat,0,.65,-.4)}
  const lab=label();g.add(mouth,wow,b1,b2,body,head,e1,e2,f1,f2,hand1,hand2,ring,lab);g.position.copy(rnd());g.userData.i=i;sc.add(g);
  return{tail,i,g,mouth,wow,b1,b2,e1,e2,buzz:0,to:rnd(),wait:0,t:Math.random()*9,f1,f2,hand1,hand2,ring,lab,cue:null,cueT:0,txt:'',lie:0}});
-window.stageReset=()=>{A.forEach(a=>{a.g.visible=true;a.g.rotation.x=0;a.lie=0;a.cueT=0;a.g.position.copy(rnd())});phase=''};const nightC=new THREE.Color(),ME=A[0];let phase='';
+window.stageReset=()=>{A.forEach(a=>{a.g.visible=true;a.g.rotation.x=0;a.lie=0;a.cueT=0;a.g.position.copy(rnd())});phase=''};const nightC=new THREE.Color(),ME=A[0];
+const bx=(w,h,d,c,x,y,z)=>box(w,h,d,c,40+x,y,z);bx(7,.2,6,'#c7a576',0,-.1,0);bx(7,3,.2,'#d9c9b4',0,1.5,-3);bx(.2,3,6,'#d1bfa8',-3.5,1.5,0);bx(.2,3,6,'#d1bfa8',3.5,1.5,0);
+bx(2.4,.4,1.4,'#8a6a4a',-1.9,.2,-1.9);bx(2.2,.2,1.2,'#f0a8a0',-1.9,.5,-1.9);bx(.7,.16,.9,'#fff3dc',-2.7,.64,-1.9);
+bx(1,.8,.7,'#a97c50',2.2,.4,-2.4);bx(.1,.5,.1,'#555',2.2,1.05,-2.4);const lampB=new THREE.Mesh(new THREE.SphereGeometry(.2,12,10),new THREE.MeshBasicMaterial({color:'#ffd27a'}));lampB.position.set(42.2,1.4,-2.4);sc.add(lampB);bx(.9,.9,.08,'#a9c9e0',0,1.8,-2.88);
+const lamp2=new THREE.PointLight(0xffd090,0,14);lamp2.position.set(41,2.2,0);sc.add(lamp2);let inRoom=false;let phase='';
 window.stageCue=(i,to,sec=2.4)=>{A[i].cue=to;A[i].cueT=sec};
 window.stageTable=i=>stageCue(i,TABLE.clone().add(new THREE.Vector3((i-3.5)*.3,0,i%2?1.1:-1.1)));
 window.stageTo=(i,j)=>{if(P&&P[j])stageCue(i,A[j].g.position.clone().add(new THREE.Vector3(.9,0,.2)))};
@@ -244,7 +248,7 @@ let last=performance.now();
   const txt=p?(p.on?(p.f||'평온'):'퇴장'):'';const name=NAMES[a.i];if(txt+name!=a.txt){a.txt=txt+name;draw(a.lab,'',{고마움:'♥',화남:'💢',굶주림:'꼬르륵',불안:'💧',의심:'?',위축:'...',퇴장:''}[txt]||'',FC[txt]||'#66727a')}
   if(p&&!p.on){if(p.hp<=0){a.lie=Math.min(1,a.lie+dt*2);g.rotation.x=-a.lie*1.5;return}
    to=DOOR;sp=1.8;if(g.position.distanceTo(DOOR)<.3){g.visible=false;return}}
-  else if(phase=='night'){to=new THREE.Vector3(-5.25+a.i*1.5,0,-4.4);sp=2.4;if(g.position.distanceTo(to)<.3){g.visible=false;return}}
+  else if(phase=='night'){to=new THREE.Vector3(-5.25+a.i*1.5,0,-4.4);sp=4.6;if(window.quiet&&!a.i){g.visible=true;g.position.set(40,0,.4);g.rotation.set(0,0,0);return}if(Math.hypot(g.position.x-to.x,g.position.z-to.z)<.45){g.visible=false;return}}
   else if(phase=='vote'){const n=live2.indexOf(a),an=n/live2.length*6.283;to=new THREE.Vector3(Math.sin(an)*2.6,0,Math.cos(an)*2.3);sp=2.2}
   else if(a.cueT>0){a.cueT-=dt;to=a.cue;sp=2.4}
   else{if(f=='굶주림')sp=.45;if(f=='불안')sp=2;if(f=='화남'){hop=.13;to=ME.g.position.clone().add(new THREE.Vector3(1.1,0,.6));sp=1.6}
@@ -268,13 +272,14 @@ let last=performance.now();
   a.e1.scale.y=a.e2.scale.y=glad?.35:shock?1.5:1;const ang=f=='화남'?.5:f=='불안'||f=='굶주림'?-.35:0;a.b1.rotation.z=-ang;a.b2.rotation.z=ang;a.b1.visible=a.b2.visible=!!ang||shock;a.b1.position.y=a.b2.position.y=shock?1.56:1.5;if(a.t%3.7<.13&&!glad)a.e1.scale.y=a.e2.scale.y=.1;a.tail&&(a.tail.rotation.y=Math.sin(a.t*5)*.4);
   const sq=f=='굶주림'?.8:1;g.scale.set(1,sq,1)});
  const hd=document.getElementById('hud');if(typeof prize=='number'&&day){const t=`<small>상금</small> ${man(prize)} <small>내 몫</small> ${man(Math.floor(prize/Math.max(1,live().length))+stash)}`;if(hd.dataset.t!=t){hd.dataset.t=t;hd.innerHTML=t}}
+ const rm=!!window.quiet&&phase=='night';if(rm!=inRoom){inRoom=rm;if(rm){cam.position.set(40,2.7,6);cam.lookAt(40,.9,0)}else{cam.position.set(0,5.4,9.5);cam.lookAt(0,.9,-.9);ME.g.position.set(-5.25,0,-4)}}lamp2.intensity=rm?1.2:0;
  const nt=phase=='night';lamp.intensity+=((nt?1.5:0)-lamp.intensity)*dt*2;sc.background.lerp(nightC.set(nt?'#1d2740':'#e8dfd0'),dt*2);
- hemi.intensity+=((phase=='night'?.25:.62)-hemi.intensity)*dt*2;sun.intensity+=((phase=='night'?.08:.42)-sun.intensity)*dt*2;
+ hemi.intensity+=((rm?.6:phase=='night'?.25:.62)-hemi.intensity)*dt*2;sun.intensity+=((phase=='night'?.08:.42)-sun.intensity)*dt*2;
  r.render(sc,cam)})(last);
 addEventListener('resize',()=>{r.setSize(W(),H());cam.aspect=W()/H();cam.updateProjectionMatrix()});
 }
 {
- const _buy=buy;buy=(p,f)=>{_buy(p,f);if(!window.quiet&&f.c&&window.stageProp)stageProp(p.i,f.c>=2000?'chicken':f.c>=600?'bowl':'water');if(window.quiet)return;if(f.c&&window.stageTable){stageTable(p.i);if(p.i){stageFloat(p.i,'고민 중...');setTimeout(()=>stageFloat(p.i,'-'+man(f.c)),1100)}else stageFloat(0,'-'+man(f.c))}};
+ const _buy=buy;buy=(p,f)=>{_buy(p,f);if((!window.quiet||!p.i)&&f.c&&window.stageProp)stageProp(p.i,f.c>=2000?'chicken':f.c>=600?'bowl':'water');if(window.quiet)return;if(f.c&&window.stageTable){stageTable(p.i);if(p.i){stageFloat(p.i,'고민 중...');setTimeout(()=>stageFloat(p.i,'-'+man(f.c)),1100)}else stageFloat(0,'-'+man(f.c))}};
  const _do=doAct;doAct=(a,t)=>{if(a.k=='steal'&&window.stageBuzz)setTimeout(stageBuzz,300);if(t&&window.stageTo){stageTo(0,t.i);if(a.k=='gift'){stageProp(0,'water');stageProp(t.i,'water')}if(a.k=='drink'){stageProp(0,'bottle');stageProp(t.i,'bottle');stageTo(t.i,0)}if(a.k=='gift'||a.k=='drink'){$.innerHTML=`<div class="log">${t.n}에게 다가갑니다...</div>`;setTimeout(()=>_do(a,t),2400);return}}_do(a,t)};
  function debate(){const L=live(),ai=L.slice(1),n=L.length,top=[...L].sort((x,y)=>y.hate-x.hate)[0],who=p=>p.i?p.n:'너',say=[],pick=a=>a[R(a.length)];
   const by=(f)=>pick(ai.filter(f));let s;

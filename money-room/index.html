@@ -153,9 +153,9 @@ function doAct(a,t){const me=P[0],c=Math.random();log=[];
  if(a.k=='steal'){prize=Math.max(0,prize-1000);stash+=1000;if(c<.3){me.hate+=5;stash-=1000;log.push('빼돌리다 들켜 돈을 뺏겼습니다! 방이 뒤집혔습니다.')}else log.push('아무도 모르게 주머니가 두둑해졌습니다.')}
  feelAll();after()}
 function next(){day++;if(day>DAYS)return end();draw()}
-function vote(){$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤 · 한 명을 내보냅니다</span><b>${man(prize)}</b></div><p style="font-weight:700;font-size:18px;color:var(--pri);text-align:center">누구를 내보낼까요?${P.some(p=>p.on&&p.ally)?` 동맹 ${P.filter(p=>p.on&&p.ally).length}명이 따라 찍습니다`:''}</p><div class="log">${log.join('<br>')||'조용한 하루였습니다.'}</div>${grid(true)}`;
+function vote(){$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤 · 한 명을 내보냅니다</span><b>${man(prize)}</b></div><p style="font-weight:700;font-size:18px;color:var(--pri);text-align:center">누구를 내보낼까요?${P.some(p=>p.on&&p.ally)?` 동맹 ${P.filter(p=>p.on&&p.ally).length}명이 따라 찍습니다`:''}</p>${grid(true)}<div class="log">${log.join('<br>')||'조용한 하루였습니다.'}</div>`;
   document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>tally(+b.dataset.v))}
-function revote(pool,top){$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤 · 동점 재투표</span><b>${top}표 동점</b></div><p style="font-weight:700;font-size:18px;color:var(--pri);text-align:center">재투표: 방에서 인형을 눌러 고르세요</p><div class="log">${pool.map(p=>p.n).join(', ')} 중에서만 다시 뽑습니다.${pool.includes(P[0])?'<br>나도 대상입니다!':''}</div>${grid(pool)}`;
+function revote(pool,top){$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤 · 동점 재투표</span><b>${top}표 동점</b></div><p style="font-weight:700;font-size:18px;color:var(--pri);text-align:center">재투표: 방에서 인형을 눌러 고르세요</p>${grid(pool)}<div class="log">${pool.map(p=>p.n).join(', ')} 중에서만 다시 뽑습니다.${pool.includes(P[0])?'<br>나도 대상입니다!':''}</div>`;
   document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>tally(+b.dataset.v,pool))}
 function tally(mine,pool){const c={},L=live(),me=P[0],by=[];c[mine]=1;voted.push(mine);const anger=1+(START-prize)/START,cT={};
   [...new Set(L.map(p=>p.camp).filter(Boolean))].forEach(id=>{let bs=-1;(pool||L).filter(p=>p.camp!=id).forEach(p=>{const sc=p.hate+(p.i?0:P.filter(x=>x.on&&x.ally).length*1.5)+(p.camp?L.filter(x=>x.camp==p.camp).length:0)+Math.random()*1.5;if(sc>bs){bs=sc;cT[id]=p}})});

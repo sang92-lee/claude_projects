@@ -9,6 +9,14 @@ public static class CyclopsBuild
     [MenuItem("Cyclops/Build Scene")]
     public static void MakeScene()
     {
+        // 코드로만 쓰는 셰이더가 빌드에서 빠지지 않도록 재질을 Resources에 둔다
+        if (!AssetDatabase.IsValidFolder("Assets/Resources")) AssetDatabase.CreateFolder("Assets", "Resources");
+        if (!AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/Base.mat"))
+        {
+            var mat = new Material(Shader.Find("Standard"));
+            mat.SetFloat("_Glossiness", .15f);
+            AssetDatabase.CreateAsset(mat, "Assets/Resources/Base.mat");
+        }
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
         new GameObject("Game").AddComponent<CyclopsGame>();
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;

@@ -274,7 +274,18 @@ addEventListener('resize',()=>{r.setSize(W(),H());cam.aspect=W()/H();cam.updateP
 {
  const _buy=buy;buy=(p,f)=>{_buy(p,f);if(f.c&&window.stageProp)stageProp(p.i,f.c>=2000?'chicken':f.c>=600?'bowl':'water');if(f.c>=2000&&window.stageBuzz)setTimeout(stageBuzz,1200);if(f.c&&window.stageTable){stageTable(p.i);if(p.i){stageFloat(p.i,'고민 중...');setTimeout(()=>stageFloat(p.i,'-'+man(f.c)),1100)}else stageFloat(0,'-'+man(f.c))}};
  const _do=doAct;doAct=(a,t)=>{if(a.k=='steal'&&window.stageBuzz)setTimeout(stageBuzz,300);if(t&&window.stageTo){stageTo(0,t.i);if(a.k=='gift'){stageProp(0,'water');stageProp(t.i,'water')}if(a.k=='drink'){stageProp(0,'bottle');stageProp(t.i,'bottle');stageTo(t.i,0)}if(a.k=='gift'||a.k=='drink'){$.innerHTML=`<div class="log">${t.n}에게 다가갑니다...</div>`;setTimeout(()=>_do(a,t),2400);return}}_do(a,t)};
- const _vote=vote;vote=()=>{window.stagePhase&&stagePhase('vote');_vote()};
+ function debate(){const L=live(),ai=L.slice(1),n=L.length,top=[...L].sort((x,y)=>y.hate-x.hate)[0],who=p=>p.i?p.n:'너',say=[],pick=a=>a[R(a.length)];
+  const by=(f)=>pick(ai.filter(f));let s;
+  if(s=by(p=>p!=top))say.push(`${s.n}: "${who(top)}, 솔직히 ${top.hate?'제일 눈에 띄었잖아.':'아무것도 안 한 게 더 수상해.'}"`);
+  if(s=by(p=>p.ally))say.push(`${s.n}: "나는 네 말 따를게. 알지?"`);
+  if(s=by(p=>p.f=='불안'||p.mind==3))say.push(`${s.n}: "벌써 ${man(START-prize)}이나 사라졌어. 이러다 0원이야."`);
+  if(s=by(p=>p.mind==5))say.push(`${s.n}: "한 명 나가면 내 몫이 ${man(Math.floor(prize/Math.max(1,n-1)))}이야."`);
+  if(s=by(p=>p.mind==4)){const f=[...L].filter(p=>p!=s).sort((x,y)=>y.hp-x.hp)[0];say.push(`${s.n}: "${who(f)}, 왜 혼자 그렇게 멀쩡해?"`)}
+  if(s=by(p=>p.camp&&p.seen))say.push(`${s.n}: "우리끼리 얘기는 끝났어."`);
+  if(s=by(p=>p.f=='화남'))say.push(`${s.n}: "너, 나한테 한 짓 안 잊었어."`);
+  if(top.i&&top.hp>0)say.push(`${top.n}: "나 아니야! 다들 왜 나만 봐?"`);
+  const out=say.sort(()=>Math.random()-.5).slice(0,4);out.forEach((l,k)=>{const sp=P.find(p=>l.startsWith(p.n+':'));if(sp&&window.stageFloat)setTimeout(()=>stageFloat(sp.i,'할 말 있어!'),400+k*700)});return out}
+const _vote=vote;vote=()=>{window.stagePhase&&stagePhase('vote');log=[...log,...debate()];_vote()};
  const _next=next;next=()=>{if(!window.stagePhase||day>=DAYS)return _next();stagePhase('night');$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤</span><b>모두 각자 방으로</b></div><div class="log">${log.join('<br>')||'문이 하나씩 닫힙니다.'}</div>`;setTimeout(()=>{stagePhase('');_next()},2600)};
  const _end=end;end=x=>{window.stagePhase&&stagePhase('');_end(x)};
  }

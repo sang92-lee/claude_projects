@@ -40,7 +40,7 @@ function home(){$.innerHTML=`<h1>방 안의 8명,<br>상금 4억 8천만원</h1>
 <div class="menu" style="grid-template-columns:1fr"><button class="main" id="go">방에 들어가기</button><p class="sub" style="text-align:center">가상의 돈으로 하는 게임입니다${best()?` · 최고 ${man(best())}`:''}</p></div>`;go.onclick=start}
 function best(){try{return +localStorage.getItem('room')||0}catch(e){return 0}}
 function start(){P=NAMES.map((n,i)=>({i,n,hp:70,hate:0,like:0,on:true,greed:Math.random()*.5}));const m=[0,1,2,3,4,5].sort(()=>Math.random()-.5);P.slice(1).forEach((p,k)=>p.mind=m[k%6]);stash=0;voted=[];prize=START;day=1;log=['첫날입니다. 다들 서로 눈치만 봅니다.'];draw()}
-function draw(){const me=P[0];$.innerHTML=`<div class="prize"><span class="sub">${day}일째 / 14일 · 내 몫 예상 ${man(Math.floor(prize/live().length))}</span><b>${man(prize)}</b></div>${grid()}
+function draw(){const me=P[0];$.innerHTML=`<div class="prize"><span class="sub">${day}일째 / 14일 · 내 몫 예상</span><b>${man(Math.floor(prize/live().length)+stash)}</b><span class="sub">전체 상금 ${man(prize)} · ${live().length}명이 나눔</span></div>${grid()}
 <div class="log">${log.join('<br>')}</div><p style="font-weight:700">오늘 뭘 먹을까? 내 체력 ${me.hp}${VOTE.includes(day)?' · 오늘 밤 투표':''}</p>
 <div class="menu">${FOOD.map((f,i)=>`<button class="${f.sneak?'sneak':''}" data-f="${i}"><b>${f.n}</b><small>${f.c?man(f.c)+' · 체력 +'+f.h:'체력이 깎입니다'}${f.sneak?' · 들키면 큰일':''}</small></button>`).join('')}</div>`;
 document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>eat(+b.dataset.f))}

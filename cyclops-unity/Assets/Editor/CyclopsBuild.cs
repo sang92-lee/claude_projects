@@ -29,6 +29,17 @@ public static class CyclopsBuild
         EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
     }
 
+    public static void BuildWeb()
+    {
+        MakeScene();
+        PlayerSettings.productName = "Cyclops";
+        PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
+        PlayerSettings.WebGL.decompressionFallback = true;
+        var report = BuildPipeline.BuildPlayer(new[] { ScenePath }, "Build/Web", BuildTarget.WebGL, BuildOptions.None);
+        Debug.Log("BUILD " + report.summary.result);
+        EditorApplication.Exit(report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded ? 0 : 1);
+    }
+
     public static void BuildMac()
     {
         MakeScene();

@@ -461,7 +461,7 @@ public class CyclopsGame : MonoBehaviour
         if (style == null)
         {
             style = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, wordWrap = true, fontStyle = FontStyle.Bold };
-            style.font = Font.CreateDynamicFontFromOSFont(new[] { "Apple SD Gothic Neo", "Noto Sans CJK KR", "NotoSansCJK-Regular", "Arial" }, 32);
+            style.font = Resources.Load<Font>("NotoSansKR");
             style.normal.textColor = new Color(.96f, .9f, .77f);
         }
         float h = Screen.height, w = Screen.width;

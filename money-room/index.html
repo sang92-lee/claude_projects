@@ -23,7 +23,9 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 .big{font-size:38px;font-weight:800;color:var(--pri)}
 #stage{position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:460px;height:36dvh;z-index:5}#app{margin-top:36dvh;min-height:64dvh}h1{margin-top:4px;font-size:24px}
 .fl{position:absolute;color:#fff;background:#d9362b;font-weight:800;font-size:17px;padding:2px 8px;border-radius:8px;transform:translate(-50%,0);white-space:nowrap;pointer-events:none;animation:fl 2.2s forwards;z-index:9}@keyframes fl{to{margin-top:-46px;opacity:0}}.loss{color:#fff;background:#d9362b;border-radius:8px;padding:3px 8px;font-weight:800;font-size:18px;display:inline-block;margin-top:3px}
-</style></head><body><div id="stage"></div><div id="app"></div>
+.modal{background:#3a2024;border:2px solid #ef6a5a;border-radius:16px;padding:14px}.modal .two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.modal .ghost{background:#2b2f40;border-radius:12px;padding:12px}.modal .ok{background:#ef6a5a;border-radius:12px;padding:12px;font-weight:700}
+#hud{position:absolute;top:6px;left:50%;transform:translateX(-50%);background:#000a;border-radius:10px;padding:3px 12px;font-weight:800;color:#f2b632;white-space:nowrap;z-index:8;font-size:17px}#hud small{color:#fff;font-size:12px;font-weight:600}
+</style></head><body><div id="stage"><div id="hud"></div></div><div id="app"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const NAMES=['나','곰돌','여우','토끼','부엉','돼지','고양','오리'],COL=['#f2b632','#b58a5f','#e8743b','#d98cb3','#7f8fd0','#e39aa0','#8fbf9a','#6fc0d8'];
@@ -55,7 +57,10 @@ function start(){A3reset();P=NAMES.map((n,i)=>({i,n,hp:70,hate:0,like:0,on:true,
 function draw(){const me=P[0];$.innerHTML=`<div class="prize"><span class="sub">${day}일째 / 14일 · 내 몫 예상</span><b>${man(Math.floor(prize/live().length)+stash)}</b><span class="sub">전체 상금 ${man(prize)} · ${live().length}명이 나눔</span></div>${grid()}
 <div class="log">${log.join('<br>')}</div><p style="font-weight:700">오늘 뭘 먹을까? 내 체력 ${me.hp}${VOTE.includes(day)?' · 오늘 밤 투표':''}</p>
 <div class="menu">${FOOD.map((f,i)=>`<button class="${f.sneak?'sneak':''}" data-f="${i}"><b>${f.n}</b><small>${f.c?man(f.c)+' · 체력 +'+f.h:'체력이 깎입니다'}${f.sneak?' · 들키면 큰일':''}</small></button>`).join('')}</div>`;
-document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>eat(+b.dataset.f))}
+document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>think(+b.dataset.f))}
+function think(i){const f=FOOD[i];if(!f.c)return eat(i);const n=live().length,now=Math.floor(prize/n),aft=Math.floor(Math.max(0,prize-f.c)/n),hun=live().filter(p=>p.i&&p.hp<35).length,box=document.querySelector('.menu');
+ box.outerHTML=`<div class="modal"><b>${f.n}, 정말 살까요?</b><p style="margin-top:6px">전체 상금 <b>-${man(f.c)}</b> · 내 몫 ${man(now)} → <b>${man(aft)}</b></p><p class="sub">${f.sneak?'들키면 미움이 크게 쌓입니다.':f.c>=600?'모두가 보는 앞에서 삽니다. 미움이 쌓입니다.':'조용히 넘어갈 수 있습니다.'}${hun?` 배고픈 사람이 ${hun}명 지켜봅니다.`:''}</p><div class="two"><button class="ghost" id="no">참는다</button><button class="ok" id="yes">그래도 산다</button></div></div>`;
+ yes.onclick=()=>eat(i);no.onclick=draw}
 function buy(p,f){prize=Math.max(0,prize-f.c);p.hp=Math.min(100,p.hp+f.h)}
 function eat(i){log=[];p0=prize;const me=P[0],f=FOOD[i];buy(me,f);
   if(f.sneak){if(Math.random()<.4){me.hate+=4;log.push('치킨 냄새에 들켰습니다! 모두가 나를 노려봅니다.')}else log.push('아무도 모르게 치킨을 먹었습니다.')}
@@ -63,6 +68,7 @@ function eat(i){log=[];p0=prize;const me=P[0],f=FOOD[i];buy(me,f);
   live().slice(1).forEach(p=>{
     const k=p.hp<35?(p.hp<20||Math.random()<p.greed?2:1):(Math.random()<p.greed*.3?2:0);
     if(k==3||(p.hp<25&&Math.random()<p.greed)){buy(p,FOOD[3]);p.hate+=3;log.push(`${p.n}가 치킨을 시켰습니다! ${man(FOOD[3].c)} 증발.`)}
+    else if(k&&p.hate>=3&&Math.random()<.4){window.stageFloat&&stageFloat(p.i,'...참자');if(log.length<3)log.push(`${p.n}가 밥을 들었다가 눈치를 보며 내려놓았습니다.`)}
     else if(k){buy(p,FOOD[k]);if(k==2){p.hate+=1;if(log.length<3)log.push(`${p.n}가 밥을 먹었습니다.`)}}});
   live().forEach(p=>p.hp-=DROP);
   const fall=live().filter(p=>p.hp<=0);fall.forEach(p=>{p.on=false;log.push(`${p.n}가 쓰러져 기권했습니다.`)});
@@ -112,11 +118,11 @@ const el=document.getElementById('stage'),W=()=>el.clientWidth,H=()=>el.clientHe
 const r=new THREE.WebGLRenderer({antialias:true});r.setPixelRatio(Math.min(devicePixelRatio,2));r.setSize(W(),H());el.appendChild(r.domElement);
 const sc=new THREE.Scene();sc.background=new THREE.Color('#2a2d3e');
 const cam=new THREE.PerspectiveCamera(42,W()/H(),.1,60);cam.position.set(0,9.5,10.5);cam.lookAt(0,0,.4);
-sc.add(new THREE.HemisphereLight(0xffffff,0x555566,.95));const sun=new THREE.DirectionalLight(0xffffff,.6);sun.position.set(3,8,4);sc.add(sun);
+const hemi=new THREE.HemisphereLight(0xffffff,0x555566,.95);sc.add(hemi);const sun=new THREE.DirectionalLight(0xffffff,.6);sun.position.set(3,8,4);sc.add(sun);
 const box=(w,h,d,c,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color:c}));m.position.set(x,y,z);sc.add(m);return m};
 box(12,.2,10,'#c9b08f',0,-.1,0);box(12,3,.2,'#4a4f68',0,1.5,-5);box(.2,3,10,'#42475e',-6,1.5,0);box(.2,3,10,'#42475e',6,1.5,0);
-box(1.3,2.2,.1,'#8a5a3c',4,1.1,-4.85);box(2.4,.15,1.3,'#f2e6cf',0,.8,0);box(.2,.8,.2,'#8a7a68',0,.4,0);
-const TABLE=new THREE.Vector3(0,0,0),DOOR=new THREE.Vector3(4,0,-4.4),rnd=()=>new THREE.Vector3(-5+Math.random()*10,0,-4+Math.random()*8);
+box(.1,2.2,1.3,'#8a5a3c',5.87,1.1,2);COL.forEach((c,i)=>box(1,1.9,.1,c,-5.25+i*1.5,.95,-4.85));box(2.4,.15,1.3,'#f2e6cf',0,.8,0);box(.2,.8,.2,'#8a7a68',0,.4,0);
+const TABLE=new THREE.Vector3(0,0,0),DOOR=new THREE.Vector3(5.3,0,2),rnd=()=>new THREE.Vector3(-5+Math.random()*10,0,-4+Math.random()*8);
 const label=t=>{const c=document.createElement('canvas');c.width=256;c.height=64;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));s.scale.set(3.4,.85,1);s.position.y=2.3;s.c=c;return s};
 const draw=(s,a,b,col)=>{const x=s.c.getContext('2d');x.clearRect(0,0,256,64);x.font='700 26px "Apple SD Gothic Neo",sans-serif';x.textAlign='center';x.lineWidth=5;x.strokeStyle='#222';x.fillStyle='#fff';x.strokeText(a,128,26);x.fillText(a,128,26);x.fillStyle=col;x.strokeText(b,128,56);x.fillText(b,128,56);s.material.map.needsUpdate=true};
 const A=COL.map((c,i)=>{const g=new THREE.Group(),mat=new THREE.MeshLambertMaterial({color:c}),dark=new THREE.MeshBasicMaterial({color:'#222'});
@@ -140,11 +146,12 @@ const ray=new THREE.Raycaster();r.domElement.addEventListener('click',e=>{const 
 let last=performance.now();
 (function loop(now){requestAnimationFrame(loop);if(document.hidden){last=now;return}const dt=Math.min(.05,(now-last)/1000);last=now;
  const live2=A.filter(a=>P&&P[a.i]&&P[a.i].on);
- A.forEach((a,k)=>{a.t+=dt;const p=P&&P[a.i],f=p?p.f:'평온',g=a.g;let sp=1.1,hop=0,to;
+ A.forEach((a,k)=>{a.t+=dt;const P0=P&&P[a.i];if(P0&&P0.on&&phase!='night')a.g.visible=true;const p=P&&P[a.i],f=p?p.f:'평온',g=a.g;let sp=1.1,hop=0,to;
   a.ring.visible=!!(p&&p.on&&(p.ally||!a.i));a.ring.material.color.set(a.i?'#58c08b':'#f2b632');
   const txt=p?(p.on?(p.f||'평온'):'퇴장'):'';const name=NAMES[a.i];if(txt+name!=a.txt){a.txt=txt+name;draw(a.lab,name,txt,FC[txt]||'#d8d8e0')}
   if(p&&!p.on){if(p.hp<=0){a.lie=Math.min(1,a.lie+dt*2);g.rotation.x=-a.lie*1.5;return}
    to=DOOR;sp=1.8;if(g.position.distanceTo(DOOR)<.3){g.visible=false;return}}
+  else if(phase=='night'){to=new THREE.Vector3(-5.25+a.i*1.5,0,-4.4);sp=2.4;if(g.position.distanceTo(to)<.3){g.visible=false;return}}
   else if(phase=='vote'){const n=live2.indexOf(a),an=n/live2.length*6.283;to=new THREE.Vector3(Math.sin(an)*2.6,0,Math.cos(an)*2.3);sp=2.2}
   else if(a.cueT>0){a.cueT-=dt;to=a.cue;sp=2.4}
   else{if(f=='굶주림')sp=.45;if(f=='불안')sp=2;if(f=='화남'){hop=.13;to=ME.g.position.clone().add(new THREE.Vector3(1.1,0,.6));sp=1.6}
@@ -161,14 +168,16 @@ let last=performance.now();
   a.f1.position.z=walk?s*.17:0;a.f2.position.z=walk?-s*.17:0;a.hand1.position.z=walk?-s*.15:0;a.hand2.position.z=walk?s*.15:0;
   a.hand1.position.y=a.hand2.position.y=f=='화남'||f=='고마움'?1.1:.7;
   const sq=f=='굶주림'?.8:1;g.scale.set(1,sq,1)});
+ const hd=document.getElementById('hud');if(typeof prize=='number'&&day){const t=`<small>상금</small> ${man(prize)} <small>내 몫</small> ${man(Math.floor(prize/Math.max(1,live().length))+stash)}`;if(hd.dataset.t!=t){hd.dataset.t=t;hd.innerHTML=t}}
+ hemi.intensity+=((phase=='night'?.22:.95)-hemi.intensity)*dt*2;sun.intensity+=((phase=='night'?.08:.6)-sun.intensity)*dt*2;
  r.render(sc,cam)})(last);
 addEventListener('resize',()=>{r.setSize(W(),H());cam.aspect=W()/H();cam.updateProjectionMatrix()});
 }
 {
- const _buy=buy;buy=(p,f)=>{_buy(p,f);if(f.c&&window.stageTable){stageTable(p.i);stageFloat(p.i,'-'+man(f.c))}};
+ const _buy=buy;buy=(p,f)=>{_buy(p,f);if(f.c&&window.stageTable){stageTable(p.i);if(p.i){stageFloat(p.i,'고민 중...');setTimeout(()=>stageFloat(p.i,'-'+man(f.c)),1100)}else stageFloat(0,'-'+man(f.c))}};
  const _do=doAct;doAct=(a,t)=>{if(t&&window.stageTo){stageTo(0,t.i)}_do(a,t)};
  const _vote=vote;vote=()=>{window.stagePhase&&stagePhase('vote');_vote()};
- const _next=next;next=()=>{window.stagePhase&&stagePhase('');_next()};
+ const _next=next;next=()=>{if(!window.stagePhase||day>=DAYS)return _next();stagePhase('night');$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤</span><b>모두 각자 방으로</b></div><div class="log">${log.join('<br>')||'문이 하나씩 닫힙니다.'}</div>`;setTimeout(()=>{stagePhase('');_next()},2600)};
  const _end=end;end=x=>{window.stagePhase&&stagePhase('');_end(x)};
  }
 try{P=NAMES.map((n,i)=>({i,n,hp:70,on:true,f:'평온'}));initStage()}catch(e){document.getElementById('stage').style.display='none';document.getElementById('app').style.marginTop=0}

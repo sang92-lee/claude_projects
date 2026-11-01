@@ -122,8 +122,19 @@ function best(){try{return +localStorage.getItem('room')||0}catch(e){return 0}}
 function start(){A3reset();p0=START;cart=[];met=false;rmsg='';P=NAMES.map((n,i)=>({i,n,hp:70,hate:0,like:0,on:true,greed:Math.random()*.5}));const m=[0,1,2,3,4,5].sort(()=>Math.random()-.5);P.slice(1).forEach((p,k)=>p.mind=m[k%6]);stash=0;voted=[];prize=START;p0=START;P.forEach(p=>p.f='평온');day=1;log=['첫날입니다. 다들 서로 눈치만 봅니다.'];draw()}
 function draw(){window.quiet=false;window.stagePhase&&stagePhase('');const lost=p0-prize;
   if(lost>=1500&&window.stageBuzz)setTimeout(stageBuzz,500);
-  $.innerHTML=`<div class="prize"><span class="sub">${day}일째 아침</span><b>${man(prize)}</b>${lost>0?`<span class="loss">간밤에 -${man(lost)}</span>`:''}</div>${grid()}<div class="log">${(day==1?['첫날입니다. 다들 서로 눈치만 봅니다.']:[lost?`간밤에 ${man(lost)}이 사라졌습니다. 누가 썼을까요?`:'간밤엔 아무도 돈을 쓰지 않았습니다.',...log]).join('<br>')}</div><div class="menu" style="grid-template-columns:1fr"><button class="main" id="dayGo">하루 보내기</button></div>`;
-  dayGo.onclick=()=>{log=[];act()}}
+  $.innerHTML=`<div class="prize"><span class="sub">${day}일째 아침</span><b>${man(prize)}</b>${lost>0?`<span class="loss">간밤에 -${man(lost)}</span>`:''}</div>${grid()}<div class="log">${(day==1?['첫날입니다. 다들 서로 눈치만 봅니다.']:[lost?`간밤에 ${man(lost)}이 사라졌습니다. 누가 썼을까요?`:'간밤엔 아무도 돈을 쓰지 않았습니다.',...log]).join('<br>')}</div><div class="menu" style="grid-template-columns:1fr"><button class="main" id="dayGo">오늘의 사건 보기</button></div>`;
+  dayGo.onclick=()=>{log=[];event0()}}
+function event0(){const ai=live().slice(1),x=ai[R(ai.length)],y=ai.filter(p=>p!=x)[0]||x,me=P[0],hungry=[...ai].sort((p,q)=>p.hp-q.hp)[0];
+  const E=[
+  [`${x.n}가 제안합니다. "오늘 밤은 다 같이 아무것도 사지 말자."`,['찬성한다',()=>{me.hate=Math.max(0,me.hate-1);me.hp-=5;return '모두가 고개를 끄덕입니다. 배가 고파집니다.'}],['비웃는다',()=>{x.like-=1;me.hate+=1;return `${x.n}의 표정이 굳었습니다.`}]],
+  ['복도에서 300만원이 든 봉투를 주웠습니다.',['모두에게 알린다',()=>{me.hate=Math.max(0,me.hate-2);prize+=300;return '상금이 300만원 늘었습니다. 다들 나를 다시 봅니다.'}],['주머니에 넣는다',()=>{if(Math.random()<.3){me.hate+=3;return '누가 봤습니다! 미움이 크게 올랐습니다.'}stash+=300;return '아무도 못 봤습니다. 300만원을 챙겼습니다.'}]],
+  [`${hungry.n}가 배고파 쓰러질 듯합니다. 체력 ${hungry.hp}.`,['물을 사 준다 (150만원)',()=>{prize=Math.max(0,prize-150);hungry.hp=Math.min(100,hungry.hp+8);hungry.like+=3;hungry.thx=day;return `${hungry.n}가 눈물을 글썽입니다.`}],['모른 척한다',()=>{me.hate+=1;return '다들 내 눈치를 봅니다.'}]],
+  [`${x.n}와 ${y.n}가 서로 범인이라며 싸웁니다.`,[`${x.n} 편을 든다`,()=>{x.like+=2;y.like-=2;y.mad=day;return `${y.n}가 나를 노려봅니다.`}],['말린다',()=>{me.hate=Math.max(0,me.hate-1);return '겨우 진정됐습니다.'}]],
+  ['벽의 스피커가 켜졌습니다. "상금 1,000만원을 내면 모두 체력 +10."',['내자고 한다',()=>{prize=Math.max(0,prize-1000);live().forEach(p=>p.hp=Math.min(100,p.hp+10));me.hate+=1;return '모두 기운을 찾았지만 상금이 줄었습니다.'}],['반대한다',()=>{return '스피커가 꺼졌습니다. 다들 아쉬워합니다.'}]],
+  [`${x.n}가 내기를 겁니다. "동전 던져서 500만원 어때?"`,['건다',()=>{if(Math.random()<.5){stash+=500;return '이겼습니다! 내 주머니에 500만원.'}stash-=500;return '졌습니다. 내 몫에서 500만원을 잃었습니다.'}],['거절한다',()=>{return `${x.n}가 어깨를 으쓱합니다.`}]],
+  ];const e=E[R(E.length)];
+  $.innerHTML=`<div class="prize"><span class="sub">${day}일째 낮 · 오늘의 사건</span><b>${man(prize)}</b></div>${grid()}<div class="log" style="font-size:16px">${e[0]}</div><div class="menu"><button id="c1"><b>${e[1][0]}</b></button><button id="c2"><b>${e[2][0]}</b></button></div>`;
+  c1.onclick=()=>{log=[e[1][1]()];act()};c2.onclick=()=>{log=[e[2][1]()];act()}}
 let cart=[],met=false,rmsg='';
 function meetPick(){$.innerHTML=`<p style="font-weight:700;font-size:18px;color:var(--pri);text-align:center">누구 방에 몰래 찾아갈까요?</p>${grid(true)}<div class="log">성공하면 그 사람의 속마음을 듣고 며칠간 내 편이 됩니다.<br>복도에서 들키면 미움이 크게 오릅니다.</div>`;document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>meet2(P[+b.dataset.v]))}
 function meet2(t){met=true;const c=Math.random();

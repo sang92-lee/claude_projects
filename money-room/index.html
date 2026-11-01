@@ -21,7 +21,10 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 .menu button{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:left}
 .menu b{display:block}.menu small{color:var(--sub)}.menu .sneak{border-color:var(--bad)}
 .big{font-size:38px;font-weight:800;color:var(--pri)}
-</style></head><body><div id="app"></div>
+#stage{position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:460px;height:36dvh;z-index:5}#app{margin-top:36dvh;min-height:64dvh}h1{margin-top:4px;font-size:24px}
+.fl{position:absolute;color:#fff;background:#d9362b;font-weight:800;font-size:17px;padding:2px 8px;border-radius:8px;transform:translate(-50%,0);white-space:nowrap;pointer-events:none;animation:fl 2.2s forwards;z-index:9}@keyframes fl{to{margin-top:-46px;opacity:0}}.loss{color:#fff;background:#d9362b;border-radius:8px;padding:3px 8px;font-weight:800;font-size:18px;display:inline-block;margin-top:3px}
+</style></head><body><div id="stage"></div><div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const NAMES=['나','곰돌','여우','토끼','부엉','돼지','고양','오리'],COL=['#f2b632','#b58a5f','#e8743b','#d98cb3','#7f8fd0','#e39aa0','#8fbf9a','#6fc0d8'];
 const FOOD=[{n:'굶기',c:0,h:0},{n:'물 한 병',c:150,h:8},{n:'밥 한 끼',c:600,h:25},{n:'몰래 치킨',c:2000,h:50,sneak:1}];
@@ -46,8 +49,9 @@ function grid(tap){return `<div class="ppl">${P.map(p=>{const t=tap&&p.on&&p.i&&
 function home(){$.innerHTML=`<h1>방 안의 8명,<br>상금 4억 8천만원</h1><p class="sub">14일을 버티면 남은 상금을 살아남은 사람끼리 나눕니다.<br>그런데 물 한 병도 상금에서 빠져나가요.<br>많이 먹으면 미움받고, 3일마다 투표로 쫓겨납니다.</p>
 <div class="ppl" style="margin-top:10px">${COL.map((c,i)=>`<div class="p">${face(c)}${NAMES[i]}</div>`).join('')}</div>
 <div class="menu" style="grid-template-columns:1fr"><button class="main" id="go">방에 들어가기</button><p class="sub" style="text-align:center">가상의 돈으로 하는 게임입니다${best()?` · 최고 ${man(best())}`:''}</p></div>`;go.onclick=start}
+function A3reset(){if(window.stageReset)stageReset()}
 function best(){try{return +localStorage.getItem('room')||0}catch(e){return 0}}
-function start(){P=NAMES.map((n,i)=>({i,n,hp:70,hate:0,like:0,on:true,greed:Math.random()*.5}));const m=[0,1,2,3,4,5].sort(()=>Math.random()-.5);P.slice(1).forEach((p,k)=>p.mind=m[k%6]);stash=0;voted=[];prize=START;p0=START;P.forEach(p=>p.f='평온');day=1;log=['첫날입니다. 다들 서로 눈치만 봅니다.'];draw()}
+function start(){A3reset();P=NAMES.map((n,i)=>({i,n,hp:70,hate:0,like:0,on:true,greed:Math.random()*.5}));const m=[0,1,2,3,4,5].sort(()=>Math.random()-.5);P.slice(1).forEach((p,k)=>p.mind=m[k%6]);stash=0;voted=[];prize=START;p0=START;P.forEach(p=>p.f='평온');day=1;log=['첫날입니다. 다들 서로 눈치만 봅니다.'];draw()}
 function draw(){const me=P[0];$.innerHTML=`<div class="prize"><span class="sub">${day}일째 / 14일 · 내 몫 예상</span><b>${man(Math.floor(prize/live().length)+stash)}</b><span class="sub">전체 상금 ${man(prize)} · ${live().length}명이 나눔</span></div>${grid()}
 <div class="log">${log.join('<br>')}</div><p style="font-weight:700">오늘 뭘 먹을까? 내 체력 ${me.hp}${VOTE.includes(day)?' · 오늘 밤 투표':''}</p>
 <div class="menu">${FOOD.map((f,i)=>`<button class="${f.sneak?'sneak':''}" data-f="${i}"><b>${f.n}</b><small>${f.c?man(f.c)+' · 체력 +'+f.h:'체력이 깎입니다'}${f.sneak?' · 들키면 큰일':''}</small></button>`).join('')}</div>`;
@@ -65,7 +69,7 @@ function eat(i){log=[];p0=prize;const me=P[0],f=FOOD[i];buy(me,f);
   if(!me.on)return end('쓰러져 기권했습니다');
   act()}
 function after(){if(VOTE.includes(day)&&live().length>2)return vote();next()}
-function act(){$.innerHTML=`<div class="prize"><span class="sub">${day}일째 저녁</span><b>${man(prize)}</b></div>${grid()}<div class="log">${log.join('<br>')||'조용한 하루였습니다.'}</div><p style="font-weight:700">오늘 저녁엔 뭘 할까?</p><div class="menu">${ACT.map((a,i)=>`<button data-a="${i}"><b>${a.n}</b><small>${a.d}</small></button>`).join('')}</div>`;
+function act(){$.innerHTML=`<div class="prize"><span class="sub">${day}일째 저녁</span><b>${man(prize)}</b>${p0>prize?`<span class="loss">오늘 -${man(p0-prize)}</span>`:''}</div>${grid()}<div class="log">${log.join('<br>')||'조용한 하루였습니다.'}</div><p style="font-weight:700">오늘 저녁엔 뭘 할까?</p><div class="menu">${ACT.map((a,i)=>`<button data-a="${i}"><b>${a.n}</b><small>${a.d}</small></button>`).join('')}</div>`;
 document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=ACT[+b.dataset.a];a.t?target(a):doAct(a)})}
 function target(a){$.innerHTML=`<p style="font-weight:700;margin-top:14px">${a.n}: 누구에게 할까요?</p>${grid(true)}`;document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>doAct(a,P[+b.dataset.v]))}
 function doAct(a,t){const me=P[0],c=Math.random();log=[];
@@ -79,7 +83,7 @@ function doAct(a,t){const me=P[0],c=Math.random();log=[];
 function next(){day++;if(day>DAYS)return end();draw()}
 function vote(){$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤 · 한 명을 내보냅니다</span><b>${man(prize)}</b></div><div class="log">${log.join('<br>')||'조용한 하루였습니다.'}</div><p style="font-weight:700">누구를 내보낼까요?${P.some(p=>p.on&&p.ally)?` 동맹 ${P.filter(p=>p.on&&p.ally).length}명이 따라 찍습니다`:''}</p>${grid(true)}`;
   document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>tally(+b.dataset.v))}
-function revote(pool,top){$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤 · 동점 재투표</span><b>${top}표 동점</b></div><div class="log">${pool.map(p=>p.n).join(', ')} 중에서만 다시 뽑습니다.${pool.includes(P[0])?'<br>나도 대상입니다!':''}</div><p style="font-weight:700">재투표: 누구를 내보낼까요?</p>${grid(pool)}`;
+function revote(pool,top){$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤 · 동점 재투표</span><b>${top}표 동점</b></div><div class="log">${pool.map(p=>p.n).join(', ')} 중에서만 다시 뽑습니다.${pool.includes(P[0])?'<br>나도 대상입니다!':''}</div><p style="font-weight:700">재투표: 방에서 인형을 눌러 고르세요</p>${grid(pool)}`;
   document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>tally(+b.dataset.v,pool))}
 function tally(mine,pool){const c={},L=live(),me=P[0],by=[];c[mine]=1;voted.push(mine);const anger=1+(START-prize)/START;
   [...L.slice(1)].sort(()=>Math.random()-.5).forEach(v=>{let top=null,bs=-99;const tgt=pool?pool.includes(P[mine]):true;
@@ -103,5 +107,71 @@ function end(fail){const take=(fail?0:Math.floor(prize/live().length))+stash;
   $.innerHTML=`<p class="sub" style="margin-top:14px">${fail?day+'일째':'14일을 버텼습니다'}</p><div class="big">${man(take)}</div><p>${fail||`남은 상금 ${man(prize)}을 ${live().length}명이 나눴습니다`}</p>${stash?`<p class="sub">빼돌린 ${man(stash)} 포함</p>`:''}${grid()}<div class="log">${P.slice(1).map(p=>`${p.n}: ${MIND[p.mind][0]}, ${MIND[p.mind][1]}`).join('<br>')}</div>
   <div class="menu" style="grid-template-columns:1fr"><button class="main" id="re">다시 들어가기</button><button id="sh" style="text-align:center">결과 공유</button></div>`;
   re.onclick=start;sh.onclick=async()=>{try{if(navigator.share)await navigator.share({text});else{await navigator.clipboard.writeText(text);sh.textContent='복사했어요'}}catch(e){}}}
+function initStage(){
+const el=document.getElementById('stage'),W=()=>el.clientWidth,H=()=>el.clientHeight;
+const r=new THREE.WebGLRenderer({antialias:true});r.setPixelRatio(Math.min(devicePixelRatio,2));r.setSize(W(),H());el.appendChild(r.domElement);
+const sc=new THREE.Scene();sc.background=new THREE.Color('#2a2d3e');
+const cam=new THREE.PerspectiveCamera(42,W()/H(),.1,60);cam.position.set(0,9.5,10.5);cam.lookAt(0,0,.4);
+sc.add(new THREE.HemisphereLight(0xffffff,0x555566,.95));const sun=new THREE.DirectionalLight(0xffffff,.6);sun.position.set(3,8,4);sc.add(sun);
+const box=(w,h,d,c,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color:c}));m.position.set(x,y,z);sc.add(m);return m};
+box(12,.2,10,'#c9b08f',0,-.1,0);box(12,3,.2,'#4a4f68',0,1.5,-5);box(.2,3,10,'#42475e',-6,1.5,0);box(.2,3,10,'#42475e',6,1.5,0);
+box(1.3,2.2,.1,'#8a5a3c',4,1.1,-4.85);box(2.4,.15,1.3,'#f2e6cf',0,.8,0);box(.2,.8,.2,'#8a7a68',0,.4,0);
+const TABLE=new THREE.Vector3(0,0,0),DOOR=new THREE.Vector3(4,0,-4.4),rnd=()=>new THREE.Vector3(-5+Math.random()*10,0,-4+Math.random()*8);
+const label=t=>{const c=document.createElement('canvas');c.width=256;c.height=64;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));s.scale.set(3.4,.85,1);s.position.y=2.3;s.c=c;return s};
+const draw=(s,a,b,col)=>{const x=s.c.getContext('2d');x.clearRect(0,0,256,64);x.font='700 26px "Apple SD Gothic Neo",sans-serif';x.textAlign='center';x.lineWidth=5;x.strokeStyle='#222';x.fillStyle='#fff';x.strokeText(a,128,26);x.fillText(a,128,26);x.fillStyle=col;x.strokeText(b,128,56);x.fillText(b,128,56);s.material.map.needsUpdate=true};
+const A=COL.map((c,i)=>{const g=new THREE.Group(),mat=new THREE.MeshLambertMaterial({color:c}),dark=new THREE.MeshBasicMaterial({color:'#222'});
+ const body=new THREE.Mesh(new THREE.SphereGeometry(.42,16,12),mat);body.scale.set(1,1.15,.9);body.position.y=.6;
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.4,16,12),mat);head.position.y=1.3;
+ const e1=new THREE.Mesh(new THREE.SphereGeometry(.06,8,8),dark),e2=e1.clone();e1.position.set(-.15,1.36,.36);e2.position.set(.15,1.36,.36);
+ const f1=new THREE.Mesh(new THREE.SphereGeometry(.15,8,8),mat),f2=f1.clone();f1.position.set(-.2,.13,0);f2.position.set(.2,.13,0);
+ const hand1=new THREE.Mesh(new THREE.SphereGeometry(.11,8,8),mat),hand2=hand1.clone();hand1.position.set(-.47,.7,0);hand2.position.set(.47,.7,0);
+ const ring=new THREE.Mesh(new THREE.RingGeometry(.5,.62,24),new THREE.MeshBasicMaterial({color:'#58c08b',side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=.02;
+ const lab=label();g.add(body,head,e1,e2,f1,f2,hand1,hand2,ring,lab);g.position.copy(rnd());g.userData.i=i;sc.add(g);
+ return{i,g,to:rnd(),wait:0,t:Math.random()*9,f1,f2,hand1,hand2,ring,lab,cue:null,cueT:0,txt:'',lie:0}});
+window.stageReset=()=>{A.forEach(a=>{a.g.visible=true;a.g.rotation.x=0;a.lie=0;a.cueT=0;a.g.position.copy(rnd())});phase=''};const ME=A[0];let phase='';
+window.stageCue=(i,to,sec=2.4)=>{A[i].cue=to;A[i].cueT=sec};
+window.stageTable=i=>stageCue(i,TABLE.clone().add(new THREE.Vector3((i-3.5)*.3,0,i%2?1.1:-1.1)));
+window.stageTo=(i,j)=>{if(P&&P[j])stageCue(i,A[j].g.position.clone().add(new THREE.Vector3(.9,0,.2)))};
+window.stagePhase=x=>phase=x;
+window.stageFloat=(i,t)=>{const v=A[i].g.position.clone();v.y=2.6;v.project(cam);const d=document.createElement('div');d.className='fl';d.textContent=t;d.style.left=Math.min(84,Math.max(16,(v.x+1)*50))+'%';d.style.top=Math.max(8,(1-v.y)*50-8+(i%3)*7)+'%';el.appendChild(d);setTimeout(()=>d.remove(),2300)};
+const ray=new THREE.Raycaster();r.domElement.addEventListener('click',e=>{const b=r.domElement.getBoundingClientRect();ray.setFromCamera({x:(e.clientX-b.left)/b.width*2-1,y:-(e.clientY-b.top)/b.height*2+1},cam);
+ const h=ray.intersectObjects(sc.children,true).find(o=>{let p=o.object;while(p&&p.userData.i===undefined)p=p.parent;return p&&(o.pick=p.userData.i,1)});
+ if(h){const b2=document.querySelector(`[data-v="${h.pick}"]`);if(b2)b2.click()}});
+let last=performance.now();
+(function loop(now){requestAnimationFrame(loop);if(document.hidden){last=now;return}const dt=Math.min(.05,(now-last)/1000);last=now;
+ const live2=A.filter(a=>P&&P[a.i]&&P[a.i].on);
+ A.forEach((a,k)=>{a.t+=dt;const p=P&&P[a.i],f=p?p.f:'평온',g=a.g;let sp=1.1,hop=0,to;
+  a.ring.visible=!!(p&&p.on&&(p.ally||!a.i));a.ring.material.color.set(a.i?'#58c08b':'#f2b632');
+  const txt=p?(p.on?(p.f||'평온'):'퇴장'):'';const name=NAMES[a.i];if(txt+name!=a.txt){a.txt=txt+name;draw(a.lab,name,txt,FC[txt]||'#d8d8e0')}
+  if(p&&!p.on){if(p.hp<=0){a.lie=Math.min(1,a.lie+dt*2);g.rotation.x=-a.lie*1.5;return}
+   to=DOOR;sp=1.8;if(g.position.distanceTo(DOOR)<.3){g.visible=false;return}}
+  else if(phase=='vote'){const n=live2.indexOf(a),an=n/live2.length*6.283;to=new THREE.Vector3(Math.sin(an)*2.6,0,Math.cos(an)*2.3);sp=2.2}
+  else if(a.cueT>0){a.cueT-=dt;to=a.cue;sp=2.4}
+  else{if(f=='굶주림')sp=.45;if(f=='불안')sp=2;if(f=='화남'){hop=.13;to=ME.g.position.clone().add(new THREE.Vector3(1.1,0,.6));sp=1.6}
+   if(f=='고마움'){hop=.28;to=ME.g.position.clone().add(new THREE.Vector3(-1,0,.5));sp=1.5}
+   if(p&&p.ally&&a.i){to=ME.g.position.clone().add(new THREE.Vector3(a.i%2?1:-1,0,.9));sp=1.5}
+   if(f=='의심'&&a.i){a.wait=.2}
+   if(!to){a.wait-=dt;if(g.position.distanceTo(a.to)<.25&&a.wait<=0){a.to=rnd();a.wait=f=='불안'?.1:.5+Math.random()*2}to=a.to}}
+  const d=to.clone().sub(g.position);d.y=0;const dist=d.length(),walk=dist>.2&&!(a.wait>0&&to==a.to&&phase!='vote');
+  // 서로 겹치지 않게 살짝 밀어낸다
+  A.forEach(b=>{if(b!=a&&b.g.visible){const v=g.position.clone().sub(b.g.position);v.y=0;const l=v.length();if(l<.8&&l>.001)g.position.addScaledVector(v.normalize(),(.8-l)*dt*5)}});
+  if(walk){d.normalize();g.position.addScaledVector(d,sp*dt);g.rotation.y=Math.atan2(d.x,d.z)}
+  else if(f=='의심'||phase=='vote'){const e=(phase=='vote'?new THREE.Vector3():ME.g.position.clone()).sub(g.position);g.rotation.y=Math.atan2(e.x,e.z)}
+  const s=Math.sin(a.t*(sp*6+3));g.position.y=Math.abs(s)*(walk?.08:0)+(hop?Math.abs(Math.sin(a.t*6))*hop:0);
+  a.f1.position.z=walk?s*.17:0;a.f2.position.z=walk?-s*.17:0;a.hand1.position.z=walk?-s*.15:0;a.hand2.position.z=walk?s*.15:0;
+  a.hand1.position.y=a.hand2.position.y=f=='화남'||f=='고마움'?1.1:.7;
+  const sq=f=='굶주림'?.8:1;g.scale.set(1,sq,1)});
+ r.render(sc,cam)})(last);
+addEventListener('resize',()=>{r.setSize(W(),H());cam.aspect=W()/H();cam.updateProjectionMatrix()});
+}
+{
+ const _buy=buy;buy=(p,f)=>{_buy(p,f);if(f.c&&window.stageTable){stageTable(p.i);stageFloat(p.i,'-'+man(f.c))}};
+ const _do=doAct;doAct=(a,t)=>{if(t&&window.stageTo){stageTo(0,t.i)}_do(a,t)};
+ const _vote=vote;vote=()=>{window.stagePhase&&stagePhase('vote');_vote()};
+ const _next=next;next=()=>{window.stagePhase&&stagePhase('');_next()};
+ const _end=end;end=x=>{window.stagePhase&&stagePhase('');_end(x)};
+ }
+try{P=NAMES.map((n,i)=>({i,n,hp:70,on:true,f:'평온'}));initStage()}catch(e){document.getElementById('stage').style.display='none';document.getElementById('app').style.marginTop=0}
+
 home();
 </script></body></html>

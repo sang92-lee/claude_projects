@@ -2,6 +2,7 @@
 <html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>8인의 방</title>
+<link rel="preconnect" href="https://fonts.gstatic.com"><link href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@600;700&family=IBM+Plex+Sans+KR:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#1f2230;--ink:#f4f0e6;--sub:#a7a8b5;--card:#2b2f40;--line:#3c4156;--pri:#f2b632;--bad:#ef6a5a;--good:#58c08b}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -38,7 +39,7 @@ body{background:radial-gradient(120% 70% at 50% 0,#2c2438,#12121b 75%)}
 #hud{top:8px;background:#0d0d15cc;border:1px solid #f2b63266;border-radius:99px;padding:3px 14px;backdrop-filter:blur(6px);font-size:16px}
 .prize{background:none;text-align:left;display:flex;align-items:center;gap:4px;padding:2px}.prize b{color:#fff;font-size:15px}
 .p{background:#ffffff0d;border:1.5px solid #ffffff14;transition:transform .12s}.p[data-v]{background:#f2b6321f;border-color:#f2b63280}.p[data-v]:active{transform:scale(.94)}
-.p.me{border-color:#f2b632;background:#f2b6321a}.p.al{border-color:#58c08b;box-shadow:0 0 8px #58c08b66}
+.p.me{border-color:#f2b632;background:#f2b6321a}.p.al{border-color:#2f6f5e;box-shadow:0 0 8px #58c08b66}
 .log{background:#ffffff0a;border:0;border-left:3px solid #f2b632;border-radius:4px 10px 10px 4px;color:#e7e3d8}
 .menu button{background:linear-gradient(180deg,#34344a,#28283a);border:1px solid #ffffff1c;box-shadow:0 2px 0 #0007;transition:transform .1s}.menu button:active{transform:translateY(2px);box-shadow:none}
 .menu .sneak{border-color:#ef6a5a99}.menu .main{background:linear-gradient(180deg,#ffcf5c,#eda921);color:#2a1e05;border:0}
@@ -46,6 +47,25 @@ body{background:radial-gradient(120% 70% at 50% 0,#2c2438,#12121b 75%)}
 .fl{font-size:12px;padding:1px 6px;border-radius:99px;background:#17171fd9;border:1px solid #ef6a5a;animation-duration:1.8s}
 .big{color:#ffcf5c;text-shadow:0 2px 12px #f2b63255}
 @media(min-height:740px){#stage{height:38dvh}#app{margin-top:38dvh;height:62dvh}}
+
+:root{--bg:#f5f2eb;--ink:#13212a;--sub:#66727a;--card:#fffdf8;--line:#dcd6c9;--pri:#7d1f35;--bad:#a3243b;--good:#2f6f5e}
+html,body{font-family:"IBM Plex Sans KR","Apple SD Gothic Neo",sans-serif}
+body{background:var(--bg)}
+h1,.big,.prize b,#hud{font-family:Hahmlet,"Noto Serif KR",serif}
+h1{font-size:30px;line-height:1.2;font-weight:700;letter-spacing:-.02em}
+#stage{border-radius:0;box-shadow:none;border-bottom:1px solid var(--ink)}
+#hud{background:#f5f2ebee;border:1px solid var(--ink);border-radius:2px;color:var(--pri);backdrop-filter:none;font-weight:700}#hud small{color:var(--sub)}
+.prize b{color:var(--ink);font-size:17px}.prize .sub{letter-spacing:.02em}
+.loss{background:none;color:var(--bad);border:1px solid var(--bad);border-radius:2px;font-weight:600}
+.p{background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;color:var(--ink)}
+.p.me{background:none;box-shadow:inset 0 -2px 0 var(--pri)}.p.al{box-shadow:inset 0 -2px 0 var(--good);border-color:var(--line)}
+.p[data-v]{background:#7d1f350d;border:1px solid var(--pri);border-radius:2px}.hp{background:#e6e0d3;border-radius:0}.hp i{background:var(--ink)}
+.hate{color:var(--bad)}
+.log{background:none;border:0;border-left:2px solid var(--pri);border-radius:0;color:var(--ink);font-size:14px}
+.menu button{background:var(--card);border:1px solid var(--line);border-radius:3px;box-shadow:none;color:var(--ink)}.menu button:active{transform:none;background:#ece6d9}
+.menu .sneak{border-color:var(--pri)}.menu .main,.main{background:var(--pri);color:#fff;border-radius:3px;font-weight:600;box-shadow:none}
+.modal{background:var(--card);border:1px solid var(--pri);border-radius:3px;box-shadow:none}.modal .ghost{background:none;border:1px solid var(--line);border-radius:3px}.modal .ok{background:var(--pri);color:#fff;border-radius:3px}
+.fl{background:#fffdf8;color:var(--bad);border:1px solid var(--bad);border-radius:2px}.big{color:var(--pri);text-shadow:none}
 </style></head><body><div id="stage"><div id="hud"></div></div><div id="app"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -54,7 +74,7 @@ const FOOD=[{n:'굶기',c:0,h:0},{n:'물 한 병',c:150,h:8},{n:'밥 한 끼',c:
 const START=48000,DAYS=14,VOTE=[3,6,9,12],DROP=15;
 const MIND=[['복수형','나를 찍은 사람을 기억해 되갚습니다'],['동조형','표가 몰린 쪽을 따라갑니다'],['의리형','은혜를 받으면 꼭 갚습니다'],['불안형','상금이 줄수록 날카로워집니다'],['시기형','배부르고 멀쩡한 사람을 미워합니다'],['계산형','쫓아낼수록 내 몫이 커진다고 봅니다']];
 const ACT=[{k:'rest',n:'쉬기',d:'체력 +6'},{k:'sorry',n:'사과하기',d:'내 미움 -2'},{k:'gift',n:'물 나눠 주기',d:'150만원 · 한 명이 내 편으로',t:1},{k:'gossip',n:'뒷담화',d:'한 명 미움 +2 · 들킬 수 있음',t:1},{k:'ally',n:'동맹 제안',d:'한 명에게 표 부탁 · 거절될 수 있음',t:1},{k:'steal',n:'상금 빼돌리기',d:'1,000만원 내 주머니로 · 들키면 큰일'}];
-const FC={화남:'#ef6a5a',굶주림:'#e8a03b',불안:'#b79be0',고마움:'#58c08b',의심:'#6fc0d8',위축:'#a7a8b5'};
+const FC={화남:'#a3243b',굶주림:'#a8681b',불안:'#5d4a94',고마움:'#2f6f5e',의심:'#2c6a84',위축:'#66727a'};
 const $=document.getElementById('app'),fast=location.search.includes('fast');
 const R=n=>Math.floor(Math.random()*n);
 let P,prize,day,log,stash,voted,p0=START;
@@ -76,7 +96,7 @@ function feelAll(){camps();const lost=p0-prize;P.forEach(p=>{if(!p.on||!p.ally)r
 const man=v=>v>=10000?(v/10000).toFixed(v%10000?1:0)+'억원':v.toLocaleString()+'만원';
 const live=()=>P.filter(p=>p.on);
 function face(c,sad,f){return `<svg width="34" height="34" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="${c}"/><circle cx="11" cy="14" r="2" fill="#222"/><circle cx="21" cy="14" r="2" fill="#222"/>${f=='화남'?'<path d="M8 10l6 2M24 10l-6 2" stroke="#222" stroke-width="2"/>':''}<path d="M11 ${sad?23:20}q5 ${sad?-5:5} 10 0" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`}
-function grid(tap){return `<div class="ppl">${P.map(p=>{const t=tap&&p.on&&p.i&&(!tap.length||tap.includes(p))?`data-v="${p.i}"`:'';return `<button class="p ${p.on&&p.ally?'al':''} ${p.i?'':'me'} ${p.on?'':'out'}" ${t}>${face(COL[p.i],['굶주림','화남','불안','위축'].includes(p.f),p.f)}${p.n}<div style="font-weight:700;color:${FC[p.f]||'#a7a8b5'}">${p.on?p.f:'퇴장'}</div><div class="hp"><i style="width:${p.hp}%"></i></div><div class="hate">${p.hate?'미움 '+p.hate:''}${p.like>0?' 호감 '+p.like:''}${p.on&&p.ally?`<b style="color:#58c08b"> 동맹 ${p.trust}%</b>`:''}${p.on&&p.camp&&p.seen?'<b style="color:#b79be0"> 수상</b>':''}</div></button>`}).join('')}</div>`}
+function grid(tap){return `<div class="ppl">${P.map(p=>{const t=tap&&p.on&&p.i&&(!tap.length||tap.includes(p))?`data-v="${p.i}"`:'';return `<button class="p ${p.on&&p.ally?'al':''} ${p.i?'':'me'} ${p.on?'':'out'}" ${t}>${face(COL[p.i],['굶주림','화남','불안','위축'].includes(p.f),p.f)}${p.n}<div style="font-weight:700;color:${FC[p.f]||'#66727a'}">${p.on?p.f:'퇴장'}</div><div class="hp"><i style="width:${p.hp}%"></i></div><div class="hate">${p.hate?'미움 '+p.hate:''}${p.like>0?' 호감 '+p.like:''}${p.on&&p.ally?`<b style="color:#2f6f5e"> 동맹 ${p.trust}%</b>`:''}${p.on&&p.camp&&p.seen?'<b style="color:#5d4a94"> 수상</b>':''}</div></button>`}).join('')}</div>`}
 function home(){$.innerHTML=`<h1>방 안의 8명,<br>상금 4억 8천만원</h1><p class="sub">14일을 버티면 남은 상금을 살아남은 사람끼리 나눕니다.<br>그런데 물 한 병도 상금에서 빠져나가요.<br>많이 먹으면 미움받고, 3일마다 투표로 쫓겨납니다.</p>
 <div class="ppl" style="margin-top:10px">${COL.map((c,i)=>`<div class="p">${face(c)}${NAMES[i]}</div>`).join('')}</div>
 <div class="menu" style="grid-template-columns:1fr"><button class="main" id="go">방에 들어가기</button><p class="sub" style="text-align:center">가상의 돈으로 하는 게임입니다${best()?` · 최고 ${man(best())}`:''}</p></div>`;go.onclick=start}
@@ -147,15 +167,15 @@ function end(fail){const take=(fail?0:Math.floor(prize/live().length))+stash;
 function initStage(){
 const el=document.getElementById('stage'),W=()=>el.clientWidth,H=()=>el.clientHeight;
 const r=new THREE.WebGLRenderer({antialias:true});r.setPixelRatio(Math.min(devicePixelRatio,2));r.setSize(W(),H());el.appendChild(r.domElement);
-const sc=new THREE.Scene();sc.background=new THREE.Color('#15141d');
+const sc=new THREE.Scene();sc.background=new THREE.Color('#f5f2eb');
 const cam=new THREE.PerspectiveCamera(42,W()/H(),.1,60);cam.position.set(0,6.2,10.5);cam.lookAt(0,.2,-.2);
-const hemi=new THREE.HemisphereLight(0xffffff,0x555566,.95);sc.add(hemi);const sun=new THREE.DirectionalLight(0xffffff,.6);sun.position.set(3,8,4);sc.add(sun);
+const hemi=new THREE.HemisphereLight(0xffffff,0x555566,.75);sc.add(hemi);const sun=new THREE.DirectionalLight(0xffffff,.6);sun.position.set(3,8,4);sc.add(sun);
 const box=(w,h,d,c,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color:c}));m.position.set(x,y,z);sc.add(m);return m};
-box(12,.2,10,'#6f5c52',0,-.1,0);box(12,3,.2,'#39344a',0,1.5,-5);box(.2,3,10,'#2f2b3e',-6,1.5,0);box(.2,3,10,'#2f2b3e',6,1.5,0);
-box(.1,2.2,1.3,'#8a5a3c',5.87,1.1,2);COL.forEach((c,i)=>box(1,1.9,.1,c,-5.25+i*1.5,.95,-4.85));box(2.4,.15,1.3,'#c98f4a',0,.8,0);box(.2,.8,.2,'#8a7a68',0,.4,0);
+box(12,.2,10,'#b9ad96',0,-.1,0);box(12,3,.2,'#d8d1c2',0,1.5,-5);box(.2,3,10,'#cfc8b8',-6,1.5,0);box(.2,3,10,'#cfc8b8',6,1.5,0);
+box(.1,2.2,1.3,'#8a5a3c',5.87,1.1,2);COL.forEach((c,i)=>box(1,1.9,.1,c,-5.25+i*1.5,.95,-4.85));box(2.4,.15,1.3,'#7d1f35',0,.8,0);box(.2,.8,.2,'#8a7a68',0,.4,0);
 const TABLE=new THREE.Vector3(0,0,0),DOOR=new THREE.Vector3(5.3,0,2),rnd=()=>new THREE.Vector3(-5+Math.random()*10,0,-4+Math.random()*8);
 const label=t=>{const c=document.createElement('canvas');c.width=256;c.height=64;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));s.scale.set(3.4,.85,1);s.position.y=2.3;s.c=c;return s};
-const draw=(s,a,b,col)=>{const x=s.c.getContext('2d');x.clearRect(0,0,256,64);x.font='700 26px "Apple SD Gothic Neo",sans-serif';x.textAlign='center';x.lineWidth=5;x.strokeStyle='#222';x.fillStyle='#fff';x.strokeText(a,128,26);x.fillText(a,128,26);x.fillStyle=col;x.strokeText(b,128,56);x.fillText(b,128,56);s.material.map.needsUpdate=true};
+const draw=(s,a,b,col)=>{const x=s.c.getContext('2d');x.clearRect(0,0,256,64);x.font='700 26px "Apple SD Gothic Neo",sans-serif';x.textAlign='center';x.lineWidth=5;x.strokeStyle='#f5f2eb';x.fillStyle='#13212a';x.strokeText(a,128,26);x.fillText(a,128,26);x.fillStyle=col;x.strokeText(b,128,56);x.fillText(b,128,56);s.material.map.needsUpdate=true};
 const A=COL.map((c,i)=>{const g=new THREE.Group(),mat=new THREE.MeshLambertMaterial({color:c}),dark=new THREE.MeshBasicMaterial({color:'#222'});
  const body=new THREE.Mesh(new THREE.SphereGeometry(.42,16,12),mat);body.scale.set(1,1.15,.9);body.position.y=.6;
  const head=new THREE.Mesh(new THREE.SphereGeometry(.4,16,12),mat);head.position.y=1.3;
@@ -183,7 +203,7 @@ let last=performance.now();
  const live2=A.filter(a=>P&&P[a.i]&&P[a.i].on);
  A.forEach((a,k)=>{a.t+=dt;const P0=P&&P[a.i];if(P0&&P0.on&&phase!='night')a.g.visible=true;const p=P&&P[a.i],f=p?p.f:'평온',g=a.g;let sp=1.1,hop=0,to;
   a.ring.visible=!!(p&&p.on&&(p.ally||!a.i));a.ring.material.color.set(a.i?'#58c08b':'#f2b632');
-  const txt=p?(p.on?(p.f||'평온'):'퇴장'):'';const name=NAMES[a.i];if(txt+name!=a.txt){a.txt=txt+name;draw(a.lab,name,txt,FC[txt]||'#d8d8e0')}
+  const txt=p?(p.on?(p.f||'평온'):'퇴장'):'';const name=NAMES[a.i];if(txt+name!=a.txt){a.txt=txt+name;draw(a.lab,name,txt,FC[txt]||'#66727a')}
   if(p&&!p.on){if(p.hp<=0){a.lie=Math.min(1,a.lie+dt*2);g.rotation.x=-a.lie*1.5;return}
    to=DOOR;sp=1.8;if(g.position.distanceTo(DOOR)<.3){g.visible=false;return}}
   else if(phase=='night'){to=new THREE.Vector3(-5.25+a.i*1.5,0,-4.4);sp=2.4;if(g.position.distanceTo(to)<.3){g.visible=false;return}}
@@ -208,7 +228,7 @@ let last=performance.now();
   a.e1.scale.y=a.e2.scale.y=glad?.35:shock?1.5:1;const ang=f=='화남'?.5:f=='불안'||f=='굶주림'?-.35:0;a.b1.rotation.z=-ang;a.b2.rotation.z=ang;a.b1.visible=a.b2.visible=!!ang||shock;a.b1.position.y=a.b2.position.y=shock?1.56:1.5;
   const sq=f=='굶주림'?.8:1;g.scale.set(1,sq,1)});
  const hd=document.getElementById('hud');if(typeof prize=='number'&&day){const t=`<small>상금</small> ${man(prize)} <small>내 몫</small> ${man(Math.floor(prize/Math.max(1,live().length))+stash)}`;if(hd.dataset.t!=t){hd.dataset.t=t;hd.innerHTML=t}}
- hemi.intensity+=((phase=='night'?.22:.95)-hemi.intensity)*dt*2;sun.intensity+=((phase=='night'?.08:.6)-sun.intensity)*dt*2;
+ hemi.intensity+=((phase=='night'?.22:.75)-hemi.intensity)*dt*2;sun.intensity+=((phase=='night'?.08:.6)-sun.intensity)*dt*2;
  r.render(sc,cam)})(last);
 addEventListener('resize',()=>{r.setSize(W(),H());cam.aspect=W()/H();cam.updateProjectionMatrix()});
 }

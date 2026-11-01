@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>출발선 머니게임</title>
+<style>
+:root{--bg:#fff8ec;--ink:#3a3128;--sub:#8a7a68;--card:#fff;--line:#eadfce;--pri:#e8743b;--good:#2f9e6e;--bad:#d9483b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+#app{max-width:460px;margin:auto;padding:14px 16px 24px;min-height:100dvh;display:flex;flex-direction:column;gap:12px}
+h1{font-size:30px;line-height:1.2;margin:18px 0 4px}h2{font-size:21px;margin:0;line-height:1.3}
+p{margin:0}.sub{color:var(--sub);font-size:14px}
+button{font:inherit;color:inherit;border:0;cursor:pointer}
+.main{background:var(--pri);color:#fff;font-weight:700;border-radius:14px;padding:15px;font-size:18px;width:100%}
+.ghost{background:#f1e6d6;border-radius:14px;padding:12px;width:100%;font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px}
+.row{display:grid;grid-template-columns:34px 1fr;gap:8px;align-items:center;padding:5px 0}
+.row.dead{opacity:.5}
+.nm{display:flex;justify-content:space-between;gap:8px;font-size:14px}.nm b{white-space:nowrap}
+.me .nm{color:var(--pri);font-weight:700}
+.track{height:10px;background:#f3ebdf;border-radius:6px;overflow:hidden;margin-top:3px}
+.bar{height:100%;border-radius:6px;transition:width .7s}
+.mood{border-radius:14px;padding:11px 13px;font-weight:600}
+.m0{background:#e5f3ea}.m1{background:#fde3d8}.m2{background:#e3e6f3}
+.picks{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pick{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px 4px;text-align:center}
+.pick:active{border-color:var(--pri)}.pick:disabled{opacity:.5}
+.pick svg{display:block;margin:0 auto 4px}.pick b{display:block}.pick small{color:var(--sub);font-size:12px;line-height:1.25;display:block}
+.news{min-height:24px;font-weight:700;text-align:center}.up{color:var(--good)}.down{color:var(--bad)}
+.big{font-size:32px;font-weight:800;color:var(--pri);line-height:1.2}
+.top{display:flex;justify-content:space-between;align-items:center;font-weight:700}
+.btns{display:grid;gap:8px;margin-top:auto}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+</style></head><body><div id="app"></div>
+<script>
+const D=[["AD",68459,84,546],["AE",75060,80,93647],["AF",2123,66,1462664],["AG",29762,77,1114],["AL",22138,79,25264],["AM",19158,75,36521],["AO",9373,64,1357766],["AR",29804,76,496127],["AT",72287,81,82281],["AU",66103,83,301817],["AW",41863,76,915],["AZ",22549,74,122715],["BA",21651,77,24831],["BB",21952,76,3176],["BD",8449,74,3486449],["BE",68879,82,114466],["BF",2645,61,721257],["BG",36320,74,56893],["BH",61668,81,20251],["BI",1101,63,456994],["BJ",3844,60,472639],["BM",104909,82,530],["BN",81789,73,6306],["BO",12305,67,260456],["BR",19874,75,2640397],["BS",36786,74,4350],["BT",15061,73,10001],["BW",19974,69,61615],["BY",28425,74,74397],["BZ",13459,72,7004],["CA",64217,81,354446],["CD",1590,61,4262069],["CF",1218,19,231578],["CG",6646,65,186732],["CH",94630,84,82505],["CI",6718,62,987838],["CL",30919,79,189117],["CM",5188,62,946920],["CN",23028,78,9560425],["CO",20854,77,710414],["CR",26892,79,52439],["CV",9480,76,6465],["CW",28636,77,1227],["CY",55876,80,14709],["CZ",52947,79,101385],["DE",69670,81,740283],["DJ",6620,66,23915],["DK",78554,81,58440],["DM",18799,71,745],["DO",24622,74,205017],["DZ",15834,76,931877],["EC",15196,77,274898],["EE",48030,78,11600],["EG",17524,71,2375232],["ES",51483,83,329724],["ET",2844,67,4064081],["FI",62133,81,45004],["FJ",12980,67,16772],["FM",4087,67,2524],["FO",75266,83,636],["FR",57012,82,729574],["GA",19989,68,68790],["GB",60267,81,683124],["GD",17541,75,1395],["GE",22458,74,43110],["GH",7207,65,881635],["GL",75708,71,748],["GM",3067,65,81127],["GN",4062,60,483230],["GQ",18137,63,54328],["GR",39448,81,76196],["GT",13008,71,375930],["GW",2786,64,64130],["GY",39705,70,17047],["HK",68590,84,32323],["HN",6804,73,232737],["HR",42125,78,33930],["HT",3245,64,259372],["HU",44232,76,89327],["ID",14283,71,4518170],["IE",138465,83,54213],["IL",53617,83,181592],["IN",8941,72,23285714],["IQ",14389,72,1146011],["IR",17543,77,1191926],["IS",76592,82,4393],["IT",57261,83,395392],["JM",11886,71,33658],["JO",10881,77,235504],["JP",49246,84,788287],["KE",5882,64,1483371],["KG",6576,72,149967],["KH",6918,71,366035],["KI",3350,66,3445],["KM",3712,66,24243],["KN",31866,70,559],["KR",55509,83,253196],["KW",55034,81,49793],["KY",82193,80,873],["KZ",35889,74,417101],["LA",8765,69,163978],["LB",12291,78,94049],["LC",24434,73,2041],["LK",14191,77,275044],["LR",1691,62,167588],["LS",2761,57,55763],["LT",50653,76,22087],["LU",146919,83,6466],["LV",40546,74,15975],["LY",12264,74,126684],["MA",9309,75,635901],["MD",16442,72,26665],["ME",28050,76,7047],["MG",1716,63,989150],["MH",7431,67,881],["MK",24212,74,18134],["ML",3014,60,930866],["MM",5731,67,909135],["MN",16399,72,66958],["MO",64183,83,4335],["MR",6484,68,169887],["MT",60623,82,4302],["MU",26784,74,12246],["MV",22877,81,5973],["MW",1778,66,652810],["MX",23135,74,2063083],["MY",34414,75,430016],["MZ",1582,63,1240611],["NA",10661,64,76122],["NE",1848,60,1061837],["NG",8304,54,7406825],["NI",7795,74,132560],["NL",78630,82,168159],["NO",129914,83,51297],["NP",5102,70,583700],["NR",12874,62,314],["NZ",54080,82,58795],["OM",42610,78,77353],["PA",36327,79,71464],["PE",16674,77,541733],["PG",4419,65,256712],["PH",10130,69,1829925],["PK",5919,67,6855300],["PL",46778,77,305621],["PR",45320,79,18999],["PS",6162,77,139078],["PT",45250,82,83475],["PW",17415,69,197],["PY",16306,72,137616],["QA",122901,82,26836],["RO",41979,75,179056],["RS",26143,75,61979],["RU",40933,73,1283709],["RW",3195,68,393955],["SA",71957,77,489610],["SB",2496,70,21310],["SC",29216,75,1570],["SD",3355,66,1656071],["SE",66518,83,104869],["SG",144418,83,44532],["SI",52322,81,17530],["SK",41529,77,52688],["SL",3143,61,257169],["SM",75929,86,206],["SN",4530,68,520001],["SO",1486,54,779527],["SR",20076,73,10887],["ST",6033,69,6399],["SV",11874,72,99983],["SX",48753,76,388],["SY",4905,73,476962],["SZ",10634,63,29999],["TC",30216,78,503],["TD",2624,55,800038],["TG",3306,62,267305],["TH",22246,75,601142],["TJ",4513,72,275358],["TL",5729,67,30705],["TM",18149,70,163655],["TN",13616,76,171173],["TO",7296,73,2453],["TR",39919,78,1036755],["TT",32974,73,15006],["TV",5403,67,241],["TZ",3799,67,2306135],["UA",14768,73,233116],["UG",2919,68,1693795],["US",78009,77,3673959],["UY",33034,76,33767],["UZ",10809,72,926721],["VC",18032,71,1265],["VI",49785,80,1223],["VN",13903,75,1422642],["VU",3919,71,8976],["WS",6909,72,5619],["ZA",14747,65,1190118],["ZM",3840,65,675970],["ZW",5395,62,496245]];
+const WON=1400,COL=['#e8743b','#4c8dc9','#2f9e6e','#a06cc4','#c9a227'];
+const KO=new Intl.DisplayNames(['ko'],{type:'region'});
+const TOTAL=D.reduce((a,c)=>a+c[3],0);
+const PICKS=[{n:'금고',d:'거의 그대로',m:[1.25,1.25,1.25]},{n:'씨앗밭',d:'오르내림',m:[2.2,1.2,.55]},{n:'로켓',d:'대박 아니면 쪽박',m:[5,.8,.1]}];
+const MOODS=[{t:'세상이 잔잔합니다',c:'m0',p:[.55,.35]},{t:'모두가 돈 번 얘기뿐입니다',c:'m1',p:[.25,.15]},{t:'다들 겁먹고 팔고 있습니다',c:'m2',p:[.7,.25]}];
+const OUT=[['호황이 왔습니다!','up'],['그럭저럭 지나갑니다','' ],['금융위기가 터졌습니다!','down']];
+const RIVAL=[['금고파',()=>0],['씨앗파',()=>1],['로켓파',()=>2],['눈치파',m=>m==1?0:m==2?2:1]];
+const AGES=[20,30,40,50,60,70,80];
+function rng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function born(r){let x=r()*TOTAL;for(const c of D){x-=c[3];if(x<=0)return c}return D[0]}
+function gauss(r){return Math.sqrt(-2*Math.log(1-r()))*Math.cos(6.283*r())}
+function deal(seed){
+  const r=rng(seed),ppl=[0,1,2,3,4].map(i=>{const c=born(r),die=Math.round(Math.min(98,Math.max(28,c[2]+gauss(r)*11)));
+    return{i,c,code:c[0],name:KO.of(c[0]),die,money:c[1]*.5*WON,alive:true,name2:i?RIVAL[i-1][0]:'나'}});
+  const world=AGES.map(()=>{const m=r()<.5?0:r()<.5?1:2,x=r(),p=MOODS[m].p;return{m,o:x<p[0]?0:x<p[0]+p[1]?1:2}});
+  return{ppl,world,seed};
+}
+function step(p,w,pick,age){ if(age>=p.die){p.alive=false;return}
+  p.money*=PICKS[pick].m[w.o]; if(age<60)p.money+=p.c[1]*WON;}
+function won(v){v=Math.round(v);if(v>=1e12)return(v/1e12).toFixed(1)+'조원';if(v>=1e8)return(v/1e8).toFixed(1)+'억원';if(v>=1e4)return Math.round(v/1e4).toLocaleString()+'만원';return v.toLocaleString()+'원'}
+function face(c,sad){return `<svg width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="${c}"/><circle cx="11" cy="14" r="2" fill="#fff"/><circle cx="21" cy="14" r="2" fill="#fff"/><path d="M11 ${sad?23:20}q5 ${sad?-5:5} 10 0" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`}
+const ICON=[`<svg width="40" height="40" viewBox="0 0 40 40"><rect x="7" y="8" width="26" height="25" rx="4" fill="#8a7a68"/><circle cx="20" cy="20" r="6" fill="#f1e6d6"/></svg>`,
+`<svg width="40" height="40" viewBox="0 0 40 40"><path d="M20 34V16" stroke="#2f9e6e" stroke-width="3"/><path d="M20 20C10 20 9 11 9 11s11-1 11 9zM20 16c0-9 10-9 10-9s1 10-10 9z" fill="#2f9e6e"/></svg>`,
+`<svg width="40" height="40" viewBox="0 0 40 40"><path d="M20 4c7 7 8 16 5 24H15C12 20 13 11 20 4z" fill="#e8743b"/><circle cx="20" cy="16" r="3" fill="#fff"/><path d="M15 28l-5 6 8-2zM25 28l5 6-8-2z" fill="#c9a227"/></svg>`];
+function store(){try{return JSON.parse(localStorage.getItem('mg')||'{}')}catch(e){return{}}}
+function save(s){try{localStorage.setItem('mg',JSON.stringify(s))}catch(e){}}
+const $=document.getElementById('app');
+const q=new URLSearchParams(location.search);
+let G,round;
+function daily(){const d=new Date();return d.getFullYear()*1e4+(d.getMonth()+1)*100+d.getDate()}
+function board(){const max=Math.log10(Math.max(...G.ppl.map(p=>p.money),1e7)),min=5.5;
+  const s=[...G.ppl].sort((a,b)=>b.money-a.money);
+  return `<div class="card">${s.map(p=>`<div class="row ${p.i?'':'me'} ${p.alive?'':'dead'}">${face(COL[p.i],!p.alive)}<div><div class="nm"><span>${p.name2} · ${p.name}</span><b>${won(p.money)}</b></div><div class="track"><div class="bar" style="width:${Math.max(3,(Math.log10(Math.max(p.money,1))-min)/(max-min)*100)}%;background:${COL[p.i]}"></div></div></div></div>`).join('')}</div>`}
+function home(){const s=store();
+  $.innerHTML=`<h1>같은 1초에 태어난 5명,<br>누가 제일 부자가 될까</h1>
+  <p class="sub">태어날 나라는 못 고릅니다. 실제 세계 출생 통계로 정해져요.<br>돈을 어디에 둘지만 고르세요.</p>
+  ${G0card()}
+  <div class="btns"><button class="main" id="go">태어나기</button><button class="ghost" id="day">오늘의 5명 (모두 같은 출발선)</button>
+  <p class="sub" style="text-align:center">가상의 돈으로 하는 게임입니다${s.seen?` · 태어나본 나라 ${s.seen.length}/${D.length}`:''}${s.best?` · 최고 ${won(s.best)}`:''}</p></div>`;
+  go.onclick=()=>start(Math.floor(Math.random()*2e9));day.onclick=()=>start(daily())}
+function G0card(){return `<div class="card">${[0,1,2,3,4].map(i=>`<div class="row">${face(COL[i])}<div class="track"><div class="bar" style="width:${[92,18,41,8,60][i]}%;background:${COL[i]}"></div></div></div>`).join('')}</div>`}
+function start(seed){G=deal(seed);round=0;
+  const s=store();s.seen=[...new Set([...(s.seen||[]),G.ppl[0].code])];save(s);
+  const me=G.ppl[0],c=me.c,ch=(c[3]/TOTAL*100);
+  $.innerHTML=`<h2 style="margin-top:18px">${me.name}에서 태어났습니다</h2>
+  <p class="sub">${ch<1?'세계 아기 100명 중 1명도 안 되는 드문 출발선이에요.':'세계 아기 100명 중 약 '+Math.round(ch)+'명이 여기서 태어나요.'}<br>이 나라 평균 수명 ${c[2]}세, 1인당 벌이 연 ${won(c[1]*WON)}</p>
+  ${board()}<p class="sub">막대가 길수록 부자. 같은 1초에 태어난 네 명과 겨룹니다.</p>
+  <div class="btns"><button class="main" id="n">스무 살이 되기</button></div>`;n.onclick=turn}
+function turn(){const me=G.ppl[0],age=AGES[round];
+  if(round>=AGES.length||age>=me.die)return finish();
+  const w=G.world[round],M=MOODS[w.m];
+  $.innerHTML=`<div class="top"><span>${age}세</span><span>${won(me.money)}</span></div>${board()}
+  <div class="mood ${M.c}">${M.t}</div>
+  <p style="font-weight:700">앞으로 10년, 내 돈을 어디에 둘까?</p>
+  <div class="picks">${PICKS.map((p,i)=>`<button class="pick" data-i="${i}">${ICON[i]}<b>${p.n}</b><small>${p.d}</small></button>`).join('')}</div>
+  <div class="news" id="news"></div>`;
+  document.querySelectorAll('.pick').forEach(b=>b.onclick=()=>choose(+b.dataset.i))}
+function choose(i){const w=G.world[round],age=AGES[round];
+  document.querySelectorAll('.pick').forEach(b=>b.disabled=true);
+  G.ppl.forEach(p=>step(p,w,p.i?RIVAL[p.i-1][1](w.m):i,age));
+  (G.log=G.log||[]).push(w.o);
+  const [t,c]=OUT[w.o],b=document.querySelector('.card');b.outerHTML=board();
+  news.textContent=t;news.className='news '+c;round++;setTimeout(turn,q.has('fast')?0:1300)}
+function finish(){const me=G.ppl[0];
+  // 내가 떠난 뒤의 세상도 끝까지 돌린다
+  for(;round<AGES.length;round++){const w=G.world[round];G.ppl.forEach((p,k)=>k&&step(p,w,RIVAL[p.i-1][1](w.m),AGES[round]))}
+  const all=[...G.ppl].sort((a,b)=>b.money-a.money),rank=all.indexOf(me)+1;
+  const s=store();if(!s.best||me.money>s.best)s.best=me.money;save(s);
+  const beat=all.find(p=>p.money>me.money);
+  const msg=rank==1?'다섯 명 중 가장 부자로 눈을 감았습니다':`${beat.name}에서 태어난 ${beat.name2}보다 ${won(beat.money-me.money)} 모자랐습니다`;
+  const url=location.origin+location.pathname+'?s='+G.seed;
+  const text=`출발선 머니게임\n${me.name}에서 태어나 ${me.die}세까지, ${won(me.money)}\n같은 1초에 태어난 5명 중 ${rank}등\n같은 출발선에서 붙어봐: ${url}`;
+  $.innerHTML=`<p class="sub" style="margin-top:14px">${me.name}에서 태어나 ${me.die}세에 눈을 감았습니다</p><div class="big">${rank}등 · ${won(me.money)}</div><p>${msg}</p>
+  ${board()}
+  <div class="btns"><div class="two"><button class="ghost" id="sh">친구와 붙기</button><button class="ghost" id="cd">카드 저장</button></div><button class="main" id="re">다시 태어나기</button>
+  <p class="sub" style="text-align:center">다음엔 어느 나라일까요? 태어나본 나라 ${s.seen.length}/${D.length}</p></div>`;
+  re.onclick=()=>start(Math.floor(Math.random()*2e9));
+  sh.onclick=async()=>{try{if(navigator.share)await navigator.share({text});else{await navigator.clipboard.writeText(text);sh.textContent='복사했어요'}}catch(e){}};
+  cd.onclick=()=>card(me,rank)}
+function card(me,rank){const c=document.createElement('canvas');c.width=1080;c.height=1080;const x=c.getContext('2d'),f='"Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+  x.fillStyle='#fff8ec';x.fillRect(0,0,1080,1080);x.fillStyle='#3a3128';x.font='700 60px '+f;x.fillText('출발선 머니게임',80,150);
+  x.font='48px '+f;x.fillText(me.name+'에서 태어나',80,300);x.fillText(me.die+'세까지 살았습니다',80,370);
+  x.fillStyle='#e8743b';x.font='800 110px '+f;x.fillText(won(me.money),80,540);x.fillStyle='#3a3128';x.font='700 56px '+f;x.fillText('같은 1초에 태어난 5명 중 '+rank+'등',80,650);
+  [...G.ppl].sort((a,b)=>b.money-a.money).forEach((p,i)=>{x.fillStyle=COL[p.i];x.fillRect(80,720+i*56,Math.max(20,Math.log10(Math.max(p.money,1e5))*80),36);x.fillStyle='#3a3128';x.font='32px '+f;x.fillText(p.name,860-180,750+i*56)});
+  const a=document.createElement('a');a.download='moneygame.png';a.href=c.toDataURL();a.click()}
+q.has('s')?start(+q.get('s')):home();
+</script></body></html>

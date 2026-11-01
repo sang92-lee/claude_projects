@@ -9,8 +9,9 @@ public class CyclopsGame : MonoBehaviour
     public enum Goal { Stake, Stab, Sheep, Done, Caught }
 
     const float WalkSpeed = 1.7f, SheepSpeed = 1.0f, ReachDist = 3f;
+    const float StandHeight = 6.2f, RoamSpeed = 1.6f, RushSpeed = 4f, StumbleTime = 2.5f;
     static readonly Vector3 HeadPos = new Vector3(0, 1.4f, 2);
-    static readonly Vector3 GuardPos = new Vector3(0, 0, 13);
+    static readonly Vector3 GatePos = new Vector3(0, 0, 15);
     static readonly Vector3 StakePos = new Vector3(8, 0.4f, -12);
 
     public Goal goal = Goal.Stake;
@@ -20,19 +21,23 @@ public class CyclopsGame : MonoBehaviour
 
     CharacterController player;
     Camera cam;
-    Transform giant, lid, pupil, stake, sheepHeld;
+    Transform giant, body, armL, armR, lid, pupil, stake, sheepHeld;
     Transform[] sheep;
     Light beam, eyeGlow, torch;
     AudioSource breath, heart, sfx;
-    AudioClip splash, crack, stabClip;
+    AudioClip splash, crack, stabClip, stomp;
     Texture2D vignette, black;
     GUIStyle style;
-    Vector3[] puddles = { new Vector3(-4, 0, -9), new Vector3(3, 0, -6), new Vector3(-6, 0, -2), new Vector3(5, 0, -1), new Vector3(0, 0, -11) };
-    Vector3[] bones = { new Vector3(1, 0, -13), new Vector3(-8, 0, -6), new Vector3(9, 0, -5), new Vector3(-2, 0, -3) };
+    Vector3[] puddles = { new Vector3(-4, 0, -9), new Vector3(3, 0, -6), new Vector3(-6, 0, -2), new Vector3(5, 0, -1), new Vector3(0, 0, -11),
+        new Vector3(-3, 0, 6), new Vector3(5, 0, 10), new Vector3(0, 0, 12), new Vector3(-9, 0, 13) };
+    Vector3[] bones = { new Vector3(1, 0, -13), new Vector3(-8, 0, -6), new Vector3(9, 0, -5), new Vector3(-2, 0, -3), new Vector3(3, 0, 7), new Vector3(-7, 0, 8), new Vector3(8, 0, 13) };
     bool[] boneUsed;
-    float yaw, pitch, eyeTimer = 5, sweepBase, seen, heartT, bob, breathT, giantAlert;
-    bool scared, wasInPuddle, moving, canStab;
-    Vector3 lastMouse;
+    float yaw, pitch, eyeTimer = 5, sweepBase, seen, heartT, bob, breathT, giantAlert, stumbleT, stompT, armPhase, curSpeed, smoothYaw, stepT, grip = 1, handTimer = 3, msgT;
+    bool scared, wasInPuddle, moving, canStab, testing;
+    int handState;
+    string msg = "";
+    Transform nearSheep, hand;
+    Vector3 lastMouse, noisePos, roamTo;
 
     void Start()
     {
@@ -70,6 +75,8 @@ public class CyclopsGame : MonoBehaviour
         Prim(PrimitiveType.Cube, new Vector3(0, 4, -20), new Vector3(26, 10, 1), rock);
         Prim(PrimitiveType.Cube, new Vector3(-8, 4, 20), new Vector3(10, 10, 1), rock);
         Prim(PrimitiveType.Cube, new Vector3(8, 4, 20), new Vector3(10, 10, 1), rock);
+        // 양 없이는 나갈 수 없도록 입구를 막는 보이지 않는 벽
+        Destroy(Prim(PrimitiveType.Cube, new Vector3(0, 4, 19), new Vector3(6, 10, 1), rock).GetComponent<Renderer>());
         // 눈빛을 피해 숨을 수 있는 바위
         foreach (var r in new[] { new Vector3(-6, 1.2f, -7), new Vector3(5, 1.2f, -8), new Vector3(1, 1.2f, -5), new Vector3(-9, 1.2f, 0), new Vector3(9, 1.2f, 1) })
             Prim(PrimitiveType.Sphere, r, new Vector3(3.2f, 3, 3.2f), new Color(.3f, .25f, .21f));
@@ -110,7 +117,13 @@ public class CyclopsGame : MonoBehaviour
         giant.position = HeadPos;
         var skin = new Color(.5f, .42f, .32f);
         // 쓰러져 잠든 몸은 머리 뒤쪽으로 뻗어 있다
-        Prim(PrimitiveType.Capsule, new Vector3(0, -.1f, 5), new Vector3(4.2f, 5, 3), skin, false, giant).transform.localRotation = Quaternion.Euler(90, 0, 0);
+        body = Prim(PrimitiveType.Capsule, new Vector3(0, -.1f, 5), new Vector3(4.2f, 5, 3), skin, false, giant).transform;
+        body.localRotation = Quaternion.Euler(90, 0, 0);
+        armL = Prim(PrimitiveType.Capsule, new Vector3(-2.5f, -2.8f, -.4f), new Vector3(.9f, 2.3f, .9f), skin, false, giant).transform;
+        armR = Prim(PrimitiveType.Capsule, new Vector3(2.5f, -2.8f, -.4f), new Vector3(.9f, 2.3f, .9f), skin, false, giant).transform;
+        hand = Prim(PrimitiveType.Sphere, Vector3.zero, new Vector3(2.2f, 1, 2.8f), skin, false).transform;
+        hand.gameObject.SetActive(false);
+        armL.gameObject.SetActive(false); armR.gameObject.SetActive(false);
         Prim(PrimitiveType.Sphere, Vector3.zero, new Vector3(2.8f, 2.8f, 2.8f), skin, false, giant);
         Prim(PrimitiveType.Sphere, new Vector3(0, .3f, -1.1f), new Vector3(1.05f, 1.05f, .8f), new Color(.92f, .9f, .82f), false, giant);
         pupil = Prim(PrimitiveType.Sphere, new Vector3(0, .3f, -1.47f), new Vector3(.42f, .42f, .16f), new Color(.03f, .02f, .02f), false, giant).transform;
@@ -147,7 +160,7 @@ public class CyclopsGame : MonoBehaviour
         cam.gameObject.AddComponent<AudioListener>();
         torch = cam.gameObject.AddComponent<Light>();
         torch.type = LightType.Point; torch.range = 7; torch.intensity = .6f; torch.color = new Color(1, .75f, .55f);
-        yaw = 35;
+        yaw = smoothYaw = 35;
     }
 
     void BuildAudio()
@@ -166,6 +179,7 @@ public class CyclopsGame : MonoBehaviour
         var br = Clip("breath", Make(5, (t, n) => { low += (n - low) * .03f; float e = Mathf.Pow(Mathf.Sin(t * Mathf.PI / 5 * 2) * .5f + .5f, 2); return low * 3f * e; }));
         var hb = Clip("heart", Make(.5f, (t, n) => Mathf.Sin(t * 2 * Mathf.PI * 55) * (Mathf.Exp(-t * 18) + .7f * Mathf.Exp(-Mathf.Abs(t - .22f) * 30))));
         splash = Clip("splash", Make(.5f, (t, n) => n * Mathf.Exp(-t * 7) * .7f));
+        stomp = Clip("stomp", Make(.4f, (t, n) => Mathf.Sin(t * 2 * Mathf.PI * 42) * Mathf.Exp(-t * 11)));
         crack = Clip("crack", Make(.15f, (t, n) => n * Mathf.Exp(-t * 40)));
         stabClip = Clip("stab", Make(1.2f, (t, n) => (n * .5f + Mathf.Sin(t * 900 * (1.3f - t))) * Mathf.Exp(-t * 2.5f) * .7f));
 
@@ -193,7 +207,7 @@ public class CyclopsGame : MonoBehaviour
     {
         if (goal == Goal.Done || goal == Goal.Caught)
         {
-            if (Input.GetMouseButtonDown(0) && !simHold) SceneManager.LoadScene(0);
+            if (Input.GetMouseButtonDown(0) && !testing) SceneManager.LoadScene(0);
             return;
         }
         Move();
@@ -208,6 +222,7 @@ public class CyclopsGame : MonoBehaviour
     {
         Vector2 gui = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
         if (canStab && Input.GetMouseButtonDown(0) && StabRect.Contains(gui)) { Stab(); return; }
+        if (nearSheep && Input.GetMouseButtonDown(0) && StabRect.Contains(gui)) { GripSheep(); return; }
 
         // 왼쪽 절반을 누르면 걷고 오른쪽 절반을 끌면 둘러본다. 두 손가락을 함께 쓸 수 있다
         bool walk = simHold || Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
@@ -231,18 +246,23 @@ public class CyclopsGame : MonoBehaviour
         float scale = 900f / Mathf.Max(Screen.height, 1);
         yaw += look.x * .22f * scale;
         pitch = Mathf.Clamp(pitch - look.y * .16f * scale, -50, 50);
-        moving = walk;
-        float speed = hasSheep ? SheepSpeed : WalkSpeed;
-        cam.transform.localRotation = Quaternion.Euler(pitch, 0, 0);
-        player.transform.rotation = Quaternion.Euler(0, yaw, 0);
-        Vector3 v = moving ? player.transform.forward * speed : Vector3.zero;
+        // 가볍게 출발하고 손을 떼면 바로 멈춘다
+        float wanted = walk ? (hasSheep ? SheepSpeed : WalkSpeed) : 0;
+        curSpeed = Mathf.MoveTowards(curSpeed, wanted, Time.deltaTime * (walk ? 6 : 14));
+        moving = curSpeed > .25f;
+        smoothYaw = Mathf.LerpAngle(smoothYaw, yaw, 1 - Mathf.Exp(-18 * Time.deltaTime));
+        cam.transform.localRotation = Quaternion.Euler(pitch, 0, Mathf.Clamp(Mathf.DeltaAngle(yaw, smoothYaw) * .2f, -4, 4));
+        player.transform.rotation = Quaternion.Euler(0, smoothYaw, 0);
+        Vector3 v = player.transform.forward * curSpeed;
         player.Move((v + Vector3.down * 3) * Time.deltaTime);
-        if (moving) bob += Time.deltaTime * 7;
-        float camY = hasSheep ? .05f : .65f;
+        bob += Time.deltaTime * curSpeed * 4.2f;
+        stepT += Time.deltaTime * curSpeed;
+        if (stepT > .85f) { stepT = 0; sfx.PlayOneShot(crack, .07f); }
+        float camY = hasSheep ? -.55f : .65f;
         cam.transform.localPosition = Vector3.up * (camY + Mathf.Sin(bob) * .025f);
         if (sheepHeld)
         {
-            sheepHeld.position = player.transform.position + Vector3.down * .9f + player.transform.forward * .3f;
+            sheepHeld.position = player.transform.position + Vector3.down * .72f + player.transform.forward * .1f;
             sheepHeld.rotation = player.transform.rotation;
         }
 
@@ -259,7 +279,7 @@ public class CyclopsGame : MonoBehaviour
 
     void Alert(Vector3 at)
     {
-        if (goal == Goal.Sheep) { giantAlert = 5; return; }
+        if (goal == Goal.Sheep) { giantAlert = 6; noisePos = at; return; }
         Vector3 dir = at - HeadPos;
         sweepBase = Mathf.Atan2(dir.x, -dir.z) * Mathf.Rad2Deg;
         eye = Eye.Open; eyeTimer = 3.5f;
@@ -285,16 +305,92 @@ public class CyclopsGame : MonoBehaviour
         }
         if (goal == Goal.Sheep)
         {
+            nearSheep = null;
             if (!hasSheep)
-                foreach (var s in sheep)
-                    if (Vector3.Distance(new Vector3(pos.x, 0, pos.z), s.position) < 1.8f) { hasSheep = true; sheepHeld = s; break; }
-            giantAlert -= Time.deltaTime;
-            Vector3 t = !hasSheep && giantAlert > 0 ? new Vector3(pos.x, 0, pos.z) : GuardPos;
-            giant.position = Vector3.MoveTowards(giant.position, t, 2f * Time.deltaTime);
-            var flat = giant.position; flat.y = 0;
-            if (!hasSheep && Vector3.Distance(flat, new Vector3(pos.x, 0, pos.z)) < 3.5f) Catch();
+                foreach (var one in sheep)
+                    if (Vector3.Distance(new Vector3(pos.x, 0, pos.z), one.position) < 1.8f) nearSheep = one;
+            GiantRoam(new Vector3(pos.x, 0, pos.z));
             if (hasSheep && pos.z > 17 && Mathf.Abs(pos.x) < 3.2f) goal = Goal.Done;
         }
+    }
+
+    // 눈이 먼 거인은 더듬으며 돌아다니다가 소리가 나면 그곳으로 달려간다
+    void GiantRoam(Vector3 me)
+    {
+        Vector3 g = giant.position;
+        if (stumbleT > 0)
+        {
+            stumbleT -= Time.deltaTime;
+            g.y = Mathf.Lerp(StandHeight, HeadPos.y, stumbleT / StumbleTime);
+            g.x += Mathf.Sin(Time.time * 14) * .03f;
+            giant.position = g;
+            SwingArms(14);
+            return;
+        }
+        if (hasSheep) { GateWatch(me); return; }
+        Vector3 flat = new Vector3(g.x, 0, g.z);
+        bool hears = giantAlert > 0;
+        giantAlert -= Time.deltaTime;
+        if (hears && Vector3.Distance(flat, noisePos) < .5f) giantAlert = 0;
+        if (!hears && Vector3.Distance(flat, roamTo) < 1) roamTo = new Vector3(Random.Range(-10f, 10f), 0, Random.Range(-16f, 15f));
+        Vector3 target = hears ? noisePos : roamTo;
+        float speed = hears ? RushSpeed : RoamSpeed;
+        Vector3 next = Vector3.MoveTowards(flat, target, speed * Time.deltaTime);
+        if (target != flat)
+            giant.rotation = Quaternion.Slerp(giant.rotation, Quaternion.LookRotation(flat - target), Time.deltaTime * 3);
+        giant.position = new Vector3(next.x, StandHeight, next.z);
+        SwingArms(hears ? 9 : 3.5f);
+        stompT -= Time.deltaTime;
+        if (stompT <= 0)
+        {
+            stompT = hears ? .32f : .8f;
+            sfx.PlayOneShot(stomp, Mathf.Clamp01(1.2f - Vector3.Distance(me, next) / 22));
+        }
+        if (!hasSheep && Vector3.Distance(next, me) < 2.5f) Catch();
+    }
+
+    // 양 배에 매달리면 들킨 줄 모르는 거인이 입구를 막고 앉아 지나가는 양을 손으로 더듬는다
+    public void GripSheep()
+    {
+        hasSheep = true; sheepHeld = nearSheep; nearSheep = null; grip = 1; handTimer = 3;
+        Say("거인이 입구를 막고 앉았어요\n양만 내보내며 손으로 더듬어요", 5);
+    }
+
+    void GateWatch(Vector3 me)
+    {
+        Vector3 next = Vector3.MoveTowards(new Vector3(giant.position.x, 0, giant.position.z), GatePos, RushSpeed * Time.deltaTime);
+        giant.position = new Vector3(next.x, StandHeight, next.z);
+        giant.rotation = Quaternion.Slerp(giant.rotation, Quaternion.identity, Time.deltaTime * 2);
+        SwingArms(2);
+
+        // 움직이면 팔 힘이 빠지고 멈추면 돌아온다. 그래서 무작정 기다릴 수도 없다
+        grip = Mathf.Clamp01(grip + Time.deltaTime * (moving ? -.06f : .05f));
+        if (grip <= 0)
+        {
+            hasSheep = false; sheepHeld = null; handState = 0; hand.gameObject.SetActive(false);
+            sfx.PlayOneShot(splash); Say("손이 미끄러졌어요!", 3); Alert(me);
+            return;
+        }
+        if (me.z < 6) return;
+        handTimer -= Time.deltaTime;
+        if (handState == 0 && handTimer <= 0) { handState = 1; handTimer = 1.3f; Say("손이 내려와요! 멈추세요", 1.3f); sfx.PlayOneShot(stomp); }
+        else if (handState == 1 && handTimer <= 0) { handState = 2; handTimer = 2.5f; hand.gameObject.SetActive(true); }
+        else if (handState == 2 && handTimer <= 0) { handState = 0; handTimer = Random.Range(3f, 5f); hand.gameObject.SetActive(false); }
+        if (handState == 2)
+        {
+            hand.position = me + Vector3.up * (1.6f + Mathf.Max(0, handTimer - 1.5f) * 3 + Mathf.Sin(Time.time * 6) * .12f);
+            if (moving) Catch();
+        }
+    }
+
+    void Say(string text, float secs) { msg = text; msgT = secs; }
+
+    void SwingArms(float rate)
+    {
+        armPhase += Time.deltaTime * rate;
+        float a = Mathf.Sin(armPhase) * 40;
+        armL.localRotation = Quaternion.Euler(a, 0, -14);
+        armR.localRotation = Quaternion.Euler(-a, 0, 14);
     }
 
     public void Stab()
@@ -306,8 +402,14 @@ public class CyclopsGame : MonoBehaviour
         stake.SetParent(giant, false);
         stake.localPosition = new Vector3(0, .3f, -1.8f);
         stake.localRotation = Quaternion.Euler(90, 0, 0);
-        giant.position = GuardPos;
-        giant.rotation = Quaternion.Euler(-70, 0, 0);
+        // 누워 있던 몸을 머리 아래로 세운다
+        body.localPosition = new Vector3(0, -3.6f, 0);
+        body.localRotation = Quaternion.identity;
+        body.localScale = new Vector3(4.2f, 2.6f, 3);
+        armL.gameObject.SetActive(true); armR.gameObject.SetActive(true);
+        stumbleT = StumbleTime;
+        roamTo = new Vector3(0, 0, 10);
+        Say("거인은 입구를 지나는 것을 손으로 더듬어요\n양 배에 매달려야 빠져나갈 수 있어요", 6);
         beam.enabled = eyeGlow.enabled = false;
     }
 
@@ -343,7 +445,7 @@ public class CyclopsGame : MonoBehaviour
         if (seen > .3f) Catch();
     }
 
-    void Catch() { goal = Goal.Caught; breath.Stop(); }
+    void Catch() { if (testing) return; goal = Goal.Caught; breath.Stop(); }
 
     void Feel()
     {
@@ -373,7 +475,7 @@ public class CyclopsGame : MonoBehaviour
         {
             Goal.Stake => "모닥불 옆의 말뚝을 찾으세요",
             Goal.Stab => eye == Eye.Open ? "움직이지 마세요" : "잠든 거인의 눈앞으로",
-            Goal.Sheep => hasSheep ? "천천히 동굴 입구로" : "양 밑에 숨으세요",
+            Goal.Sheep => hasSheep ? "천천히 동굴 입구로" : player.transform.position.z > 15 ? "양 없이는 나갈 수 없어요" : "소리 내지 말고 양 밑에 숨으세요",
             _ => ""
         };
         if (goal <= Goal.Sheep) GUI.Label(new Rect(0, h * .05f, w, h * .06f), line, style);
@@ -382,6 +484,15 @@ public class CyclopsGame : MonoBehaviour
             GUI.Label(new Rect(0, h * .82f, w * .5f, h * .1f), "왼쪽 누르기\n걷기", style);
             GUI.Label(new Rect(w * .5f, h * .82f, w * .5f, h * .1f), "오른쪽 끌기\n둘러보기", style);
         }
+        msgT -= Time.deltaTime;
+        if (msgT > 0 && goal <= Goal.Sheep) GUI.Label(new Rect(0, h * .13f, w, h * .12f), msg, style);
+        if (hasSheep && goal == Goal.Sheep)
+        {
+            GUI.color = grip < .3f ? new Color(.9f, .2f, .15f) : new Color(.93f, .85f, .6f);
+            GUI.DrawTexture(new Rect(w * .2f, h * .92f, w * .6f * grip, h * .012f), black);
+            GUI.color = Color.white;
+        }
+        if (nearSheep && GUI.Button(StabRect, "양 배에 매달리기", style)) GripSheep();
         if (canStab && GUI.Button(StabRect, "눈을 찌른다", style)) Stab();
         if (goal >= Goal.Done)
         {
@@ -402,6 +513,7 @@ public class CyclopsGame : MonoBehaviour
         int si = System.Array.IndexOf(args, "-shot");
         if (si >= 0) shot = args[si + 1];
 
+        testing = true;
         yield return new WaitForSeconds(.5f);
         eyeTimer = 99;
         Vector3 start = player.transform.position;
@@ -428,11 +540,38 @@ public class CyclopsGame : MonoBehaviour
         Stab();
         Check("stabbed", goal == Goal.Sheep);
 
-        Put(new Vector3(0, 1, 16)); yield return new WaitForSeconds(.2f);
-        Check("no sheep caught at exit", goal == Goal.Caught);
-        goal = Goal.Sheep; breath.Play();
+        stumbleT = 0; roamTo = new Vector3(0, 0, 13); yield return null;
+        Vector3 g0 = giant.position; yield return new WaitForSeconds(.6f);
+        Check("giant roams", Vector3.Distance(g0, giant.position) > .5f);
+        Check("giant upright", Mathf.Approximately(giant.position.y, StandHeight));
+
+        giant.position = new Vector3(-8, StandHeight, 12);
+        Put(new Vector3(6, 1, 4));
+        Vector3 me = new Vector3(6, 0, 4);
+        float before = Vector3.Distance(new Vector3(-8, 0, 12), me);
+        testing = false;
+        Alert(me); yield return new WaitForSeconds(.5f);
+        Check("rushes to sound", before - Vector3.Distance(new Vector3(giant.position.x, 0, giant.position.z), me) > 1.4f);
+        yield return new WaitForSeconds(4.5f);
+        Check("caught by sound", goal == Goal.Caught);
+        testing = true; goal = Goal.Sheep; breath.Play();
         Put(sheep[1].position + Vector3.up); yield return null; yield return null;
+        Check("sheep button offered", nearSheep != null && !hasSheep);
+        GripSheep(); yield return null;
         Check("hid under sheep", hasSheep);
+
+        grip = .01f; simHold = true; yield return new WaitForSeconds(.5f); simHold = false;
+        Check("grip slips", !hasSheep);
+        Put(sheep[1].position + Vector3.up); yield return null; yield return null;
+        GripSheep();
+
+        testing = false; Put(new Vector3(0, 1, 11)); handTimer = 0; yield return new WaitForSeconds(1.5f);
+        Check("hand comes down", handState == 2);
+        Check("still is safe", goal == Goal.Sheep);
+        simHold = true; yield return new WaitForSeconds(.4f); simHold = false;
+        Check("moving under hand caught", goal == Goal.Caught);
+
+        testing = true; goal = Goal.Sheep; handState = 0; handTimer = 99; hand.gameObject.SetActive(false);
         Put(new Vector3(0, 1, 17.4f)); yield return null; yield return null;
         Check("escaped", goal == Goal.Done);
 

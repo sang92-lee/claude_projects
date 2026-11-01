@@ -73,7 +73,7 @@ const NAMES=['나','곰돌','여우','토끼','부엉','돼지','고양','오리
 const FOOD=[{n:'굶기',c:0,h:0},{n:'물 한 병',c:150,h:8},{n:'밥 한 끼',c:600,h:25},{n:'몰래 치킨',c:2000,h:50,sneak:1}];
 const START=48000,DAYS=14,VOTE=[3,6,9,12],DROP=15;
 const MIND=[['복수형','나를 찍은 사람을 기억해 되갚습니다'],['동조형','표가 몰린 쪽을 따라갑니다'],['의리형','은혜를 받으면 꼭 갚습니다'],['불안형','상금이 줄수록 날카로워집니다'],['시기형','배부르고 멀쩡한 사람을 미워합니다'],['계산형','쫓아낼수록 내 몫이 커진다고 봅니다']];
-const ACT=[{k:'rest',n:'쉬기',d:'체력 +6'},{k:'sorry',n:'사과하기',d:'내 미움 -2'},{k:'gift',n:'물 나눠 주기',d:'150만원 · 한 명이 내 편으로',t:1},{k:'gossip',n:'뒷담화',d:'한 명 미움 +2 · 들킬 수 있음',t:1},{k:'ally',n:'동맹 제안',d:'한 명에게 표 부탁 · 거절될 수 있음',t:1},{k:'steal',n:'상금 빼돌리기',d:'1,000만원 내 주머니로 · 들키면 큰일'}];
+const ACT=[{k:'rest',n:'쉬기',d:'체력 +6'},{k:'sorry',n:'사과하기',d:'내 미움 -2'},{k:'gift',n:'물 나눠 주기',d:'150만원 · 한 명이 내 편으로',t:1},{k:'drink',n:'막걸리 한잔',d:'300만원 · 같이 마셔 호감 +2',t:1},{k:'gossip',n:'뒷담화',d:'한 명 미움 +2 · 들킬 수 있음',t:1},{k:'ally',n:'동맹 제안',d:'한 명에게 표 부탁 · 거절될 수 있음',t:1},{k:'steal',n:'상금 빼돌리기',d:'1,000만원 내 주머니로 · 들키면 큰일'}];
 const FC={화남:'#a3243b',굶주림:'#a8681b',불안:'#5d4a94',고마움:'#2f6f5e',의심:'#2c6a84',위축:'#66727a'};
 const $=document.getElementById('app'),fast=location.search.includes('fast');
 const R=n=>Math.floor(Math.random()*n);
@@ -85,7 +85,7 @@ function camps(){const ids=[...new Set(live().map(p=>p.camp).filter(Boolean))];
     else if(Math.random()<.1){if(m[0].seen)log.push(`${m.map(p=>p.n).join('와 ')}가 크게 다퉜습니다. 패거리가 깨졌습니다.`);m.forEach(p=>p.camp=0)}});
   const free=live().slice(1).filter(p=>!p.camp&&!p.ally).sort(()=>Math.random()-.5),cur=[...new Set(live().map(p=>p.camp).filter(Boolean))];
   if(free.length&&cur.length&&Math.random()<.2){const p=free.pop(),id=cur[R(cur.length)];p.camp=id;p.seen=Math.random()<.6;if(p.seen)log.push(`${p.n}가 ${live().find(x=>x.camp==id&&x!=p).n} 쪽에 붙은 것 같습니다.`)}
-  else if(free.length>=2&&Math.random()<.45){const x=free.pop(),y=free.pop();x.camp=y.camp=++cid;x.seen=y.seen=Math.random()<.6;if(x.seen)log.push(`${x.n}와 ${y.n}가 복도에서 귓속말을 나눕니다.`)}}
+  else if(free.length>=2&&Math.random()<.45){const x=free.pop(),y=free.pop();x.camp=y.camp=++cid;x.seen=y.seen=Math.random()<.6;if(x.seen)log.push(`${x.n}와 ${y.n}가 몰래 술잔을 기울입니다.`);if(window.stageProp){stageProp(x.i,'bottle');stageProp(y.i,'bottle')}}}
 function feelAll(){camps();const lost=p0-prize;P.forEach(p=>{if(!p.on||!p.ally)return;p.trust-=4+(P[0].hate>=4?6:0)+(lost>=2000?4:0);if(p.trust<=30){p.ally=false;p.mad=day;log.push(`${p.n}가 더 이상 나를 믿지 않습니다. 동맹이 끊겼습니다.`)}});P.forEach(p=>{if(!p.on)return;
   if(p.hp<30)p.f='굶주림';
   else if(!p.i){p.f=p.hate>=4?'위축':'평온';return}
@@ -131,6 +131,7 @@ function doAct(a,t){const me=P[0],c=Math.random();log=[];
  if(a.k=='rest')me.hp=Math.min(100,me.hp+6);
  if(a.k=='sorry')me.hate=Math.max(0,me.hate-2);
  if(a.k=='gift'){prize=Math.max(0,prize-150);t.hp=Math.min(100,t.hp+8);t.like+=t.mind==2?3:2;t.thx=day;if(t.ally)t.trust=Math.min(100,t.trust+20);log.push(`${t.n}가 고마워합니다.`)}
+ if(a.k=='drink'){prize=Math.max(0,prize-300);t.like+=2;t.thx=day;if(t.ally)t.trust=Math.min(100,t.trust+10);log.push(`${t.n}와 막걸리를 나눠 마셨습니다. 조금 가까워졌습니다.`)}
  if(a.k=='gossip'){t.hate+=2;if(c<.3){t.like-=3;t.mad=day;me.hate+=2;log.push(`${t.n} 뒷담화를 들켰습니다!`)}else log.push(`${t.n}를 보는 눈길이 달라졌습니다.`)}
  if(a.k=='ally'){const ok=c<.35+t.like*.15+(t.mind==5?.2:0);if(t.ally){t.trust=Math.min(100,t.trust+10);log.push(`${t.n}와 다시 손을 맞잡았습니다.`)}else if(ok){t.camp=0;t.ally=true;t.trust=70;t.thx=day;log.push(`${t.n}와 동맹! 이제 내가 찍는 사람을 함께 찍습니다.`)}else log.push(`${t.n}가 고개를 돌립니다.`)}
  if(a.k=='steal'){prize=Math.max(0,prize-1000);stash+=1000;if(c<.3){me.hate+=5;stash-=1000;log.push('빼돌리다 들켜 돈을 뺏겼습니다! 방이 뒤집혔습니다.')}else log.push('아무도 모르게 주머니가 두둑해졌습니다.')}
@@ -167,12 +168,24 @@ function end(fail){const take=(fail?0:Math.floor(prize/live().length))+stash;
 function initStage(){
 const el=document.getElementById('stage'),W=()=>el.clientWidth,H=()=>el.clientHeight;
 const r=new THREE.WebGLRenderer({antialias:true});r.setPixelRatio(Math.min(devicePixelRatio,2));r.setSize(W(),H());el.appendChild(r.domElement);
-const sc=new THREE.Scene();sc.background=new THREE.Color('#f5f2eb');
+const sc=new THREE.Scene();sc.background=new THREE.Color('#d6e6dc');
 const cam=new THREE.PerspectiveCamera(42,W()/H(),.1,60);cam.position.set(0,6.2,10.5);cam.lookAt(0,.2,-.2);
 const hemi=new THREE.HemisphereLight(0xffffff,0x555566,.75);sc.add(hemi);const sun=new THREE.DirectionalLight(0xffffff,.6);sun.position.set(3,8,4);sc.add(sun);
 const box=(w,h,d,c,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color:c}));m.position.set(x,y,z);sc.add(m);return m};
-box(12,.2,10,'#b9ad96',0,-.1,0);box(12,3,.2,'#d8d1c2',0,1.5,-5);box(.2,3,10,'#cfc8b8',-6,1.5,0);box(.2,3,10,'#cfc8b8',6,1.5,0);
-box(.1,2.2,1.3,'#8a5a3c',5.87,1.1,2);COL.forEach((c,i)=>box(1,1.9,.1,c,-5.25+i*1.5,.95,-4.85));box(2.4,.15,1.3,'#7d1f35',0,.8,0);box(.2,.8,.2,'#8a7a68',0,.4,0);
+const cone=(r,h,c,x,y,z)=>{const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,8),new THREE.MeshLambertMaterial({color:c}));m.position.set(x,y,z);sc.add(m);return m};
+for(let i=0;i<10;i++)box(12,.2,.97,i%2?'#c79a63':'#b98a55',0,-.1,-4.5+i);
+box(12,2.2,.2,'#efe4cc',0,1.1,-5);box(12.2,.14,.3,'#8a4b2f',0,2.2,-4.85);
+box(13.6,.24,2.4,'#56656c',0,2.72,-4.45).rotation.x=.38;box(13.8,.2,.34,'#3f4c53',0,3.18,-5.1);box(13.8,.1,.16,'#7fa8a0',0,2.3,-3.42);
+const ec=[-6.8,6.8];ec.forEach(x=>box(.5,.14,.5,'#3f4c53',x,2.42,-3.4).rotation.z=x<0?-.5:.5);
+[-6,-3,0,3,6].forEach(x=>box(.22,2.3,.22,'#a8432f',x,1.15,-4.7));
+COL.forEach((c,i)=>{const x=-5.25+i*1.5;box(1,1.75,.1,'#fff8e8',x,.9,-4.86);box(1.06,.12,.13,c,x,1.82,-4.83);box(.05,1.75,.13,'#8a4b2f',x,.9,-4.83);[.5,.95,1.4].forEach(y=>box(1,.04,.13,'#8a4b2f',x,y,-4.83))});
+[-6.1,6.1].forEach(x=>box(.3,.6,10,'#a3aaa3',x,.3,0));
+const lit=[-3,3].map(x=>{const m=new THREE.Mesh(new THREE.SphereGeometry(.24,12,10),new THREE.MeshBasicMaterial({color:'#ff9d5c'}));m.scale.y=1.2;m.position.set(x,1.85,-4.1);sc.add(m);box(.03,.4,.03,'#3f4c53',x,2.25,-4.1);return m});
+const lamp=new THREE.PointLight(0xffb060,0,16);lamp.position.set(0,2.4,-1);sc.add(lamp);
+[1.2,2.8].forEach(z=>box(.2,2.2,.2,'#a8432f',5.75,1.1,z));box(.9,.2,2.6,'#56656c',5.75,2.3,2);
+box(.8,.3,.8,'#a9aeaa',-5,.15,3.6);box(.55,.5,.55,'#b9bdb9',-5,.55,3.6);box(.95,.1,.95,'#8f9692',-5,.85,3.6);box(.42,.4,.42,'#b9bdb9',-5,1.08,3.6);box(.75,.1,.75,'#8f9692',-5,1.33,3.6);cone(.18,.4,'#8f9692',-5,1.58,3.6);
+box(.25,.8,.25,'#7a5236',5,.4,-3.3);cone(.85,1.1,'#4f8a68',5,1.2,-3.3);cone(.65,1,'#5e9b77',5,1.75,-3.3);
+box(2.4,.15,1.3,'#8a4b2f',0,.5,0);box(.2,.5,.2,'#6c3a24',0,.25,0);
 const TABLE=new THREE.Vector3(0,0,0),DOOR=new THREE.Vector3(5.3,0,2),rnd=()=>new THREE.Vector3(-5+Math.random()*10,0,-4+Math.random()*8);
 const label=t=>{const c=document.createElement('canvas');c.width=256;c.height=64;const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));s.scale.set(3.4,.85,1);s.position.y=2.3;s.c=c;return s};
 const draw=(s,a,b,col)=>{const x=s.c.getContext('2d');x.clearRect(0,0,256,64);x.font='700 26px "Apple SD Gothic Neo",sans-serif';x.textAlign='center';x.lineWidth=5;x.strokeStyle='#f5f2eb';x.fillStyle='#13212a';x.strokeText(a,128,26);x.fillText(a,128,26);x.fillStyle=col;x.strokeText(b,128,56);x.fillText(b,128,56);s.material.map.needsUpdate=true};
@@ -187,11 +200,13 @@ const A=COL.map((c,i)=>{const g=new THREE.Group(),mat=new THREE.MeshLambertMater
  const b1=new THREE.Mesh(new THREE.BoxGeometry(.17,.035,.03),dark),b2=b1.clone();b1.position.set(-.15,1.5,.34);b2.position.set(.15,1.5,.34);
  const lab=label();g.add(mouth,wow,b1,b2,body,head,e1,e2,f1,f2,hand1,hand2,ring,lab);g.position.copy(rnd());g.userData.i=i;sc.add(g);
  return{i,g,mouth,wow,b1,b2,e1,e2,buzz:0,to:rnd(),wait:0,t:Math.random()*9,f1,f2,hand1,hand2,ring,lab,cue:null,cueT:0,txt:'',lie:0}});
-window.stageReset=()=>{A.forEach(a=>{a.g.visible=true;a.g.rotation.x=0;a.lie=0;a.cueT=0;a.g.position.copy(rnd())});phase=''};const ME=A[0];let phase='';
+window.stageReset=()=>{A.forEach(a=>{a.g.visible=true;a.g.rotation.x=0;a.lie=0;a.cueT=0;a.g.position.copy(rnd())});phase=''};const nightC=new THREE.Color(),ME=A[0];let phase='';
 window.stageCue=(i,to,sec=2.4)=>{A[i].cue=to;A[i].cueT=sec};
 window.stageTable=i=>stageCue(i,TABLE.clone().add(new THREE.Vector3((i-3.5)*.3,0,i%2?1.1:-1.1)));
 window.stageTo=(i,j)=>{if(P&&P[j])stageCue(i,A[j].g.position.clone().add(new THREE.Vector3(.9,0,.2)))};
 window.stagePhase=x=>phase=x;
+const PROP={water:['#6fb7e0',.07,.2],bowl:['#fff8e8',.13,.1],chicken:['#b5702e',.14,.17],bottle:['#e9e4d2',.08,.26]};
+window.stageProp=(i,k,sec=3.6)=>{const a=A[i],d=PROP[k];if(a.prop)a.hand1.remove(a.prop);a.prop=new THREE.Mesh(new THREE.CylinderGeometry(d[1],d[1]*.8,d[2],10),new THREE.MeshLambertMaterial({color:d[0]}));a.prop.position.y=.12;a.hand1.add(a.prop);a.propT=sec;if(k=='bottle')a.drunk=sec+3};
 const BUZZ=['웅성웅성','누구야?','또 줄었어!','내 몫이...','수상한데','너 아니야?','이러다 0원이야'];
 window.stageBuzz=()=>{const L=A.filter(a=>P[a.i]&&P[a.i].on);L.forEach((a,n)=>{a.buzz=3.2;const an=n/L.length*6.283;stageCue(a.i,new THREE.Vector3(Math.sin(an)*1.7,0,1.6+Math.cos(an)*1.3),3.2);setTimeout(()=>stageFloat(a.i,BUZZ[Math.floor(Math.random()*BUZZ.length)]),300+n*280)})};
 window.stageFloat=(i,t)=>{const v=A[i].g.position.clone();v.y=2.6;v.project(cam);const d=document.createElement('div');d.className='fl';d.textContent=t;d.style.left=Math.min(84,Math.max(16,(v.x+1)*50))+'%';d.style.top=Math.max(18,(1-v.y)*50-8+(i%3)*7)+'%';el.appendChild(d);setTimeout(()=>d.remove(),2300)};
@@ -223,18 +238,21 @@ let last=performance.now();
   const s=Math.sin(a.t*(sp*6+3));g.position.y=Math.abs(s)*(walk?.08:0)+(hop?Math.abs(Math.sin(a.t*6))*hop:0);
   a.f1.position.z=walk?s*.17:0;a.f2.position.z=walk?-s*.17:0;a.hand1.position.z=walk?-s*.15:0;a.hand2.position.z=walk?s*.15:0;
   a.hand1.position.y=a.hand2.position.y=f=='화남'||f=='고마움'?1.1:.7;
+  if(a.propT>0){a.propT-=dt;a.hand1.position.set(-.3,1.08+Math.sin(a.t*7)*.08,.34);if(a.propT<=0&&a.prop){a.hand1.remove(a.prop);a.prop=null}}
+  if(a.drunk>0){a.drunk-=dt;g.rotation.z=Math.sin(a.t*3)*.16}else g.rotation.z=0;
   a.buzz=Math.max(0,a.buzz-dt);const sad=['굶주림','화남','불안','위축'].includes(f),glad=f=='고마움',shock=a.buzz>0;
   a.wow.visible=shock;a.mouth.visible=!shock;a.mouth.rotation.z=sad?0:Math.PI;a.mouth.position.y=sad?1.17:1.26;const ms=glad?1.5:f=='의심'?.6:1;a.mouth.scale.set(ms,f=='의심'?.15:ms,1);
   a.e1.scale.y=a.e2.scale.y=glad?.35:shock?1.5:1;const ang=f=='화남'?.5:f=='불안'||f=='굶주림'?-.35:0;a.b1.rotation.z=-ang;a.b2.rotation.z=ang;a.b1.visible=a.b2.visible=!!ang||shock;a.b1.position.y=a.b2.position.y=shock?1.56:1.5;
   const sq=f=='굶주림'?.8:1;g.scale.set(1,sq,1)});
  const hd=document.getElementById('hud');if(typeof prize=='number'&&day){const t=`<small>상금</small> ${man(prize)} <small>내 몫</small> ${man(Math.floor(prize/Math.max(1,live().length))+stash)}`;if(hd.dataset.t!=t){hd.dataset.t=t;hd.innerHTML=t}}
+ const nt=phase=='night';lamp.intensity+=((nt?1.5:0)-lamp.intensity)*dt*2;sc.background.lerp(nightC.set(nt?'#1d2740':'#d6e6dc'),dt*2);
  hemi.intensity+=((phase=='night'?.22:.75)-hemi.intensity)*dt*2;sun.intensity+=((phase=='night'?.08:.6)-sun.intensity)*dt*2;
  r.render(sc,cam)})(last);
 addEventListener('resize',()=>{r.setSize(W(),H());cam.aspect=W()/H();cam.updateProjectionMatrix()});
 }
 {
- const _buy=buy;buy=(p,f)=>{_buy(p,f);if(f.c>=2000&&window.stageBuzz)setTimeout(stageBuzz,1200);if(f.c&&window.stageTable){stageTable(p.i);if(p.i){stageFloat(p.i,'고민 중...');setTimeout(()=>stageFloat(p.i,'-'+man(f.c)),1100)}else stageFloat(0,'-'+man(f.c))}};
- const _do=doAct;doAct=(a,t)=>{if(a.k=='steal'&&window.stageBuzz)setTimeout(stageBuzz,300);if(t&&window.stageTo){stageTo(0,t.i)}_do(a,t)};
+ const _buy=buy;buy=(p,f)=>{_buy(p,f);if(f.c&&window.stageProp)stageProp(p.i,f.c>=2000?'chicken':f.c>=600?'bowl':'water');if(f.c>=2000&&window.stageBuzz)setTimeout(stageBuzz,1200);if(f.c&&window.stageTable){stageTable(p.i);if(p.i){stageFloat(p.i,'고민 중...');setTimeout(()=>stageFloat(p.i,'-'+man(f.c)),1100)}else stageFloat(0,'-'+man(f.c))}};
+ const _do=doAct;doAct=(a,t)=>{if(a.k=='steal'&&window.stageBuzz)setTimeout(stageBuzz,300);if(t&&window.stageTo){stageTo(0,t.i);if(a.k=='gift'){stageProp(0,'water');stageProp(t.i,'water')}if(a.k=='drink'){stageProp(0,'bottle');stageProp(t.i,'bottle');stageTo(t.i,0)}if(a.k=='gift'||a.k=='drink'){$.innerHTML=`<div class="log">${t.n}에게 다가갑니다...</div>`;setTimeout(()=>_do(a,t),2400);return}}_do(a,t)};
  const _vote=vote;vote=()=>{window.stagePhase&&stagePhase('vote');_vote()};
  const _next=next;next=()=>{if(!window.stagePhase||day>=DAYS)return _next();stagePhase('night');$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤</span><b>모두 각자 방으로</b></div><div class="log">${log.join('<br>')||'문이 하나씩 닫힙니다.'}</div>`;setTimeout(()=>{stagePhase('');_next()},2600)};
  const _end=end;end=x=>{window.stagePhase&&stagePhase('');_end(x)};

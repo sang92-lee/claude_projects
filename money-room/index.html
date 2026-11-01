@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>8인의 방</title>
+<title>머니게임</title>
 <link rel="preconnect" href="https://fonts.gstatic.com"><link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#1f2230;--ink:#f4f0e6;--sub:#a7a8b5;--card:#2b2f40;--line:#3c4156;--pri:#f2b632;--bad:#ef6a5a;--good:#58c08b}
@@ -197,7 +197,7 @@ function tally(mine,pool){const c={},L=live(),me=P[0],by=[];c[mine]=1;voted.push
   if(!out.i)return end(`${top}표를 받고 쫓겨났습니다`);next()}
 function end(fail){const take=(fail?0:Math.floor(prize/live().length))+stash;
   try{if(take>best())localStorage.setItem('room',take)}catch(e){}
-  const text=fail?`8인의 방: ${day}일째에 ${fail.replace('습니다','음')}. 상금 0원`:`8인의 방: 14일을 버텨 ${man(take)} 획득, 생존 ${live().length}명`;
+  const text=fail?`머니게임: ${day}일째에 ${fail.replace('습니다','음')}. 상금 0원`:`머니게임: 14일을 버텨 ${man(take)} 획득, 생존 ${live().length}명`;
   $.innerHTML=`<p class="sub" style="margin-top:14px">${fail?day+'일째':'14일을 버텼습니다'}</p><div class="big">${man(take)}</div><p>${fail||`남은 상금 ${man(prize)}을 ${live().length}명이 나눴습니다`}</p>${stash?`<p class="sub">빼돌린 ${man(stash)} 포함</p>`:''}${grid()}<div class="log">${P.slice(1).map(p=>`${p.n}: ${MIND[p.mind][0]}${p.camp?' · 패거리 있음':''}, ${MIND[p.mind][1]}`).join('<br>')}</div>
   <div class="menu" style="grid-template-columns:1fr"><button class="main" id="re">다시 들어가기</button><button id="sh" style="text-align:center">결과 공유</button></div>`;
   re.onclick=start;sh.onclick=async()=>{try{if(navigator.share)await navigator.share({text});else{await navigator.clipboard.writeText(text);sh.textContent='복사했어요'}}catch(e){}}}

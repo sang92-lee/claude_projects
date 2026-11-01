@@ -26,18 +26,20 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 const NAMES=['나','곰돌','여우','토끼','부엉','돼지','고양','오리'],COL=['#f2b632','#b58a5f','#e8743b','#d98cb3','#7f8fd0','#e39aa0','#8fbf9a','#6fc0d8'];
 const FOOD=[{n:'굶기',c:0,h:0},{n:'물 한 병',c:150,h:8},{n:'밥 한 끼',c:600,h:25},{n:'몰래 치킨',c:2000,h:50,sneak:1}];
 const START=48000,DAYS=14,VOTE=[3,6,9,12],DROP=15;
+const MIND=[['복수형','나를 찍은 사람을 기억해 되갚습니다'],['동조형','표가 몰린 쪽을 따라갑니다'],['의리형','은혜를 받으면 꼭 갚습니다'],['불안형','상금이 줄수록 날카로워집니다'],['시기형','배부르고 멀쩡한 사람을 미워합니다'],['계산형','쫓아낼수록 내 몫이 커진다고 봅니다']];
+const ACT=[{k:'rest',n:'쉬기',d:'체력 +6'},{k:'sorry',n:'사과하기',d:'내 미움 -2'},{k:'gift',n:'물 나눠 주기',d:'150만원 · 한 명이 내 편으로',t:1},{k:'gossip',n:'뒷담화',d:'한 명 미움 +2 · 들킬 수 있음',t:1},{k:'ally',n:'동맹 제안',d:'한 명에게 표 부탁 · 거절될 수 있음',t:1},{k:'steal',n:'상금 빼돌리기',d:'1,000만원 내 주머니로 · 들키면 큰일'}];
 const $=document.getElementById('app'),fast=location.search.includes('fast');
 const R=n=>Math.floor(Math.random()*n);
-let P,prize,day,log;
+let P,prize,day,log,stash,voted;
 const man=v=>v>=10000?(v/10000).toFixed(v%10000?1:0)+'억원':v.toLocaleString()+'만원';
 const live=()=>P.filter(p=>p.on);
 function face(c,sad){return `<svg width="34" height="34" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="${c}"/><circle cx="11" cy="14" r="2" fill="#222"/><circle cx="21" cy="14" r="2" fill="#222"/><path d="M11 ${sad?23:20}q5 ${sad?-5:5} 10 0" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`}
-function grid(tap){return `<div class="ppl">${P.map(p=>{const t=tap&&p.on&&p.i?`data-v="${p.i}"`:'';return `<button class="p ${p.i?'':'me'} ${p.on?'':'out'}" ${t}>${face(COL[p.i],p.hp<30)}${p.n}<div class="hp"><i style="width:${p.hp}%"></i></div><div class="hate">${p.hate?'미움 '+p.hate:''}</div></button>`}).join('')}</div>`}
+function grid(tap){return `<div class="ppl">${P.map(p=>{const t=tap&&p.on&&p.i?`data-v="${p.i}"`:'';return `<button class="p ${p.i?'':'me'} ${p.on?'':'out'}" ${t}>${face(COL[p.i],p.hp<30)}${p.n}<div class="hp"><i style="width:${p.hp}%"></i></div><div class="hate">${p.hate?'미움 '+p.hate:''}${p.like>0?' 호감 '+p.like:''}</div></button>`}).join('')}</div>`}
 function home(){$.innerHTML=`<h1>방 안의 8명,<br>상금 4억 8천만원</h1><p class="sub">14일을 버티면 남은 상금을 살아남은 사람끼리 나눕니다.<br>그런데 물 한 병도 상금에서 빠져나가요.<br>많이 먹으면 미움받고, 3일마다 투표로 쫓겨납니다.</p>
 <div class="ppl" style="margin-top:10px">${COL.map((c,i)=>`<div class="p">${face(c)}${NAMES[i]}</div>`).join('')}</div>
 <div class="menu" style="grid-template-columns:1fr"><button class="main" id="go">방에 들어가기</button><p class="sub" style="text-align:center">가상의 돈으로 하는 게임입니다${best()?` · 최고 ${man(best())}`:''}</p></div>`;go.onclick=start}
 function best(){try{return +localStorage.getItem('room')||0}catch(e){return 0}}
-function start(){P=NAMES.map((n,i)=>({i,n,hp:70,hate:0,on:true,greed:Math.random()*.5}));prize=START;day=1;log=['첫날입니다. 다들 서로 눈치만 봅니다.'];draw()}
+function start(){P=NAMES.map((n,i)=>({i,n,hp:70,hate:0,like:0,on:true,greed:Math.random()*.5}));const m=[0,1,2,3,4,5].sort(()=>Math.random()-.5);P.slice(1).forEach((p,k)=>p.mind=m[k%6]);stash=0;voted=[];prize=START;day=1;log=['첫날입니다. 다들 서로 눈치만 봅니다.'];draw()}
 function draw(){const me=P[0];$.innerHTML=`<div class="prize"><span class="sub">${day}일째 / 14일 · 내 몫 예상 ${man(Math.floor(prize/live().length))}</span><b>${man(prize)}</b></div>${grid()}
 <div class="log">${log.join('<br>')}</div><p style="font-weight:700">오늘 뭘 먹을까? 내 체력 ${me.hp}${VOTE.includes(day)?' · 오늘 밤 투표':''}</p>
 <div class="menu">${FOOD.map((f,i)=>`<button class="${f.sneak?'sneak':''}" data-f="${i}"><b>${f.n}</b><small>${f.c?man(f.c)+' · 체력 +'+f.h:'체력이 깎입니다'}${f.sneak?' · 들키면 큰일':''}</small></button>`).join('')}</div>`;
@@ -53,19 +55,37 @@ function eat(i){log=[];const me=P[0],f=FOOD[i];buy(me,f);
   live().forEach(p=>p.hp-=DROP);
   const fall=live().filter(p=>p.hp<=0);fall.forEach(p=>{p.on=false;log.push(`${p.n}가 쓰러져 기권했습니다.`)});
   if(!me.on)return end('쓰러져 기권했습니다');
-  if(VOTE.includes(day)&&live().length>2)return vote();next()}
+  act()}
+function after(){if(VOTE.includes(day)&&live().length>2)return vote();next()}
+function act(){$.innerHTML=`<div class="prize"><span class="sub">${day}일째 저녁</span><b>${man(prize)}</b></div>${grid()}<div class="log">${log.join('<br>')||'조용한 하루였습니다.'}</div><p style="font-weight:700">오늘 저녁엔 뭘 할까?</p><div class="menu">${ACT.map((a,i)=>`<button data-a="${i}"><b>${a.n}</b><small>${a.d}</small></button>`).join('')}</div>`;
+document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=ACT[+b.dataset.a];a.t?target(a):doAct(a)})}
+function target(a){$.innerHTML=`<p style="font-weight:700;margin-top:14px">${a.n}: 누구에게 할까요?</p>${grid(true)}`;document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>doAct(a,P[+b.dataset.v]))}
+function doAct(a,t){const me=P[0],c=Math.random();log=[];
+ if(a.k=='rest')me.hp=Math.min(100,me.hp+6);
+ if(a.k=='sorry')me.hate=Math.max(0,me.hate-2);
+ if(a.k=='gift'){prize=Math.max(0,prize-150);t.hp=Math.min(100,t.hp+8);t.like+=t.mind==2?3:2;log.push(`${t.n}가 고마워합니다.`)}
+ if(a.k=='gossip'){t.hate+=2;if(c<.3){t.like-=3;me.hate+=2;log.push(`${t.n} 뒷담화를 들켰습니다!`)}else log.push(`${t.n}를 보는 눈길이 달라졌습니다.`)}
+ if(a.k=='ally'){const ok=c<.35+t.like*.15+(t.mind==5?.2:0);if(ok){t.ally=day;log.push(`${t.n}가 다음 투표를 약속했습니다. 믿어도 될까요?`)}else log.push(`${t.n}가 고개를 돌립니다.`)}
+ if(a.k=='steal'){prize=Math.max(0,prize-1000);stash+=1000;if(c<.3){me.hate+=5;stash-=1000;log.push('빼돌리다 들켜 돈을 뺏겼습니다! 방이 뒤집혔습니다.')}else log.push('아무도 모르게 주머니가 두둑해졌습니다.')}
+ after()}
 function next(){day++;if(day>DAYS)return end();draw()}
 function vote(){$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤 · 한 명을 내보냅니다</span><b>${man(prize)}</b></div><div class="log">${log.join('<br>')||'조용한 하루였습니다.'}</div><p style="font-weight:700">누구를 내보낼까요?</p>${grid(true)}`;
   document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>tally(+b.dataset.v))}
-function tally(mine){const c={},L=live();c[mine]=1;
-  L.slice(1).forEach(v=>{const o=L.filter(p=>p!=v);const t=o.reduce((a,p)=>(p.hate+Math.random()*2.5>a.s?{s:p.hate+Math.random()*2.5,p}:a),{s:-1}).p;c[t.i]=(c[t.i]||0)+1});
+function tally(mine){const c={},L=live(),me=P[0],by=[];c[mine]=1;voted.push(mine);const anger=1+(START-prize)/START;
+  [...L.slice(1)].sort(()=>Math.random()-.5).forEach(v=>{let top=null,bs=-99;L.filter(p=>p!=v).forEach(p=>{
+    let s=p.hate*(v.mind==3?anger*1.5:1)+Math.random()*2.5+(v.hp<30?Math.random()*2:0);
+    if(v.mind==1)s+=(c[p.i]||0)*1.5;
+    if(v.mind==4&&p.hp>60)s+=2;
+    if(v.mind==5)s+=p.hp<35?-1:p.hp/50;
+    if(!p.i){s-=v.like*(v.mind==2?1.2:.7);if(voted.includes(v.i))s+=v.mind==0?5:1;if(v.ally&&day-v.ally<=3)s-=v.mind==5&&Math.random()<.4?-3:8}
+    if(s>bs){bs=s;top=p}});c[top.i]=(c[top.i]||0)+1;if(!top.i)by.push(v.n)});
   const top=Math.max(...Object.values(c)),ids=Object.keys(c).filter(k=>c[k]==top),out=P[+ids[R(ids.length)]];
-  out.on=false;log=[`${out.n}가 ${top}표로 방에서 쫓겨났습니다.`];
+  out.on=false;log=[`${out.n}가 ${top}표로 방에서 쫓겨났습니다.`,by.length?`나를 찍은 사람: ${by.join(', ')}`:'아무도 나를 찍지 않았습니다.'];
   if(!out.i)return end(`${top}표를 받고 쫓겨났습니다`);next()}
-function end(fail){const take=fail?0:Math.floor(prize/live().length);
+function end(fail){const take=(fail?0:Math.floor(prize/live().length))+stash;
   try{if(take>best())localStorage.setItem('room',take)}catch(e){}
   const text=fail?`8인의 방: ${day}일째에 ${fail.replace('습니다','음')}. 상금 0원`:`8인의 방: 14일을 버텨 ${man(take)} 획득, 생존 ${live().length}명`;
-  $.innerHTML=`<p class="sub" style="margin-top:14px">${fail?day+'일째':'14일을 버텼습니다'}</p><div class="big">${man(take)}</div><p>${fail||`남은 상금 ${man(prize)}을 ${live().length}명이 나눴습니다`}</p>${grid()}
+  $.innerHTML=`<p class="sub" style="margin-top:14px">${fail?day+'일째':'14일을 버텼습니다'}</p><div class="big">${man(take)}</div><p>${fail||`남은 상금 ${man(prize)}을 ${live().length}명이 나눴습니다`}</p>${stash?`<p class="sub">빼돌린 ${man(stash)} 포함</p>`:''}${grid()}<div class="log">${P.slice(1).map(p=>`${p.n}: ${MIND[p.mind][0]}, ${MIND[p.mind][1]}`).join('<br>')}</div>
   <div class="menu" style="grid-template-columns:1fr"><button class="main" id="re">다시 들어가기</button><button id="sh" style="text-align:center">결과 공유</button></div>`;
   re.onclick=start;sh.onclick=async()=>{try{if(navigator.share)await navigator.share({text});else{await navigator.clipboard.writeText(text);sh.textContent='복사했어요'}}catch(e){}}}
 home();

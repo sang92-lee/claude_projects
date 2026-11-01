@@ -23,6 +23,12 @@ public class CyclopsGame : MonoBehaviour
     Camera cam;
     Transform giant, body, armL, armR, lid, pupil, stake, sheepHeld;
     Transform[] sheep;
+    readonly Transform[] sheepHead = new Transform[3];
+    readonly Transform[][] sheepLegs = new Transform[3][];
+    readonly Vector3[] sheepGoal = new Vector3[3];
+    readonly float[] sheepWait = new float[3];
+    float bleatT = 4;
+    AudioClip bleat;
     Light beam, eyeGlow, torch;
     AudioSource breath, heart, sfx;
     AudioClip splash, crack, stabClip, stomp;
@@ -110,20 +116,91 @@ public class CyclopsGame : MonoBehaviour
 
         sheep = new Transform[3];
         var spots = new[] { new Vector3(-9, 0, 5), new Vector3(9, 0, 7), new Vector3(-5, 0, 10) };
-        for (int i = 0; i < 3; i++) sheep[i] = MakeSheep(spots[i]);
+        for (int i = 0; i < 3; i++) sheep[i] = MakeSheep(spots[i], i);
+
+        // 천장의 종유석
+        var drip = new System.Random(5);
+        for (int i = 0; i < 26; i++)
+        {
+            float len = .5f + (float)drip.NextDouble() * 1.3f;
+            Prim(PrimitiveType.Capsule, new Vector3((float)drip.NextDouble() * 24 - 12, 8.5f - len * .7f, (float)drip.NextDouble() * 38 - 19), new Vector3(.3f, len, .3f), rock * 1.25f, false);
+        }
 
         var door = new GameObject("Daylight").AddComponent<Light>();
         door.type = LightType.Point; door.color = new Color(.65f, .78f, 1); door.range = 11; door.intensity = 1.6f;
         door.transform.position = new Vector3(0, 3, 18.5f);
     }
 
-    Transform MakeSheep(Vector3 at)
+    Transform MakeSheep(Vector3 at, int index)
     {
         var s = new GameObject("Sheep").transform;
         s.position = at;
-        Prim(PrimitiveType.Sphere, new Vector3(0, .7f, 0), new Vector3(1, .85f, 1.4f), new Color(.86f, .84f, .78f), false, s);
-        Prim(PrimitiveType.Sphere, new Vector3(0, .95f, .75f), new Vector3(.42f, .42f, .5f), new Color(.15f, .13f, .12f), false, s);
+        var rng = new System.Random(index + 3);
+        var wool = new Color(.86f, .84f, .78f);
+        // 몽실몽실한 털은 작은 공을 겹쳐 만든다
+        Prim(PrimitiveType.Sphere, new Vector3(0, .75f, 0), new Vector3(.95f, .8f, 1.35f), wool, false, s);
+        for (int i = 0; i < 14; i++)
+        {
+            float a = (float)rng.NextDouble() * 6.28f, z = (float)rng.NextDouble() * 1.1f - .55f, size = .34f + (float)rng.NextDouble() * .16f;
+            Prim(PrimitiveType.Sphere, new Vector3(Mathf.Cos(a) * .42f, .75f + Mathf.Sin(a) * .34f, z), Vector3.one * size, wool * (.93f + (float)rng.NextDouble() * .09f), false, s);
+        }
+        var dark = new Color(.13f, .11f, .1f);
+        var head = new GameObject("Head").transform;
+        head.SetParent(s, false);
+        head.localPosition = new Vector3(0, .95f, .78f);
+        Prim(PrimitiveType.Sphere, Vector3.zero, new Vector3(.36f, .38f, .48f), dark, false, head);
+        Prim(PrimitiveType.Sphere, new Vector3(0, .17f, -.03f), new Vector3(.36f, .2f, .3f), wool, false, head);
+        foreach (int side in new[] { -1, 1 })
+        {
+            Prim(PrimitiveType.Sphere, new Vector3(side * .24f, .06f, -.04f), new Vector3(.26f, .09f, .13f), dark, false, head);
+            Prim(PrimitiveType.Sphere, new Vector3(side * .13f, .07f, .15f), Vector3.one * .07f, new Color(.95f, .85f, .55f), false, head);
+        }
+        var legs = new Transform[4];
+        int n = 0;
+        foreach (var p in new[] { new Vector3(-.27f, .35f, .42f), new Vector3(.27f, .35f, .42f), new Vector3(-.27f, .35f, -.42f), new Vector3(.27f, .35f, -.42f) })
+            legs[n++] = Prim(PrimitiveType.Cylinder, p, new Vector3(.11f, .35f, .11f), dark, false, s).transform;
+        sheepHead[index] = head; sheepLegs[index] = legs;
+        sheepGoal[index] = at; sheepWait[index] = index * 1.7f + 1;
         return s;
+    }
+
+    // 양은 풀을 뜯듯 고개를 숙이고, 이따금 몇 걸음 옮기며 운다
+    void SheepLife()
+    {
+        bleatT -= Time.deltaTime;
+        for (int i = 0; i < sheep.Length; i++)
+        {
+            var s = sheep[i];
+            bool held = s == sheepHeld;
+            Vector3 at = s.position; at.y = 0;
+            float pace = held ? curSpeed : 0;
+            if (!held)
+            {
+                sheepWait[i] -= Time.deltaTime;
+                if (Vector3.Distance(at, sheepGoal[i]) > .1f && sheepWait[i] <= 0)
+                {
+                    pace = .45f;
+                    Vector3 next = Vector3.MoveTowards(at, sheepGoal[i], pace * Time.deltaTime);
+                    if (next != at) s.rotation = Quaternion.Slerp(s.rotation, Quaternion.LookRotation(next - at), Time.deltaTime * 3);
+                    s.position = next;
+                }
+                else if (sheepWait[i] <= 0)
+                {
+                    sheepWait[i] = Random.Range(3f, 7f);
+                    sheepGoal[i] = new Vector3(Mathf.Clamp(at.x + Random.Range(-3f, 3f), -11, 11), 0, Mathf.Clamp(at.z + Random.Range(-3f, 3f), 4, 13));
+                }
+            }
+            float graze = !held && pace == 0 ? Mathf.Max(0, Mathf.Sin(Time.time * .5f + i * 2)) : 0;
+            sheepHead[i].localRotation = Quaternion.Euler(graze * 45 + Mathf.Sin(Time.time * 5 + i) * 2 * graze, 0, 0);
+            for (int l = 0; l < 4; l++)
+                sheepLegs[i][l].localRotation = Quaternion.Euler(pace > .05f ? Mathf.Sin(Time.time * 10 + l * 3.14f * .5f) * 22 : 0, 0, 0);
+        }
+        if (bleatT <= 0)
+        {
+            bleatT = Random.Range(5f, 11f);
+            var one = sheep[Random.Range(0, sheep.Length)];
+            sfx.PlayOneShot(bleat, Mathf.Clamp01(1.1f - Vector3.Distance(player.transform.position, one.position) / 24) * .6f);
+        }
     }
 
     void BuildGiant()
@@ -137,6 +214,8 @@ public class CyclopsGame : MonoBehaviour
         armL = Prim(PrimitiveType.Capsule, new Vector3(-2.5f, -2.8f, -.4f), new Vector3(.9f, 2.3f, .9f), skin, false, giant).transform;
         armR = Prim(PrimitiveType.Capsule, new Vector3(2.5f, -2.8f, -.4f), new Vector3(.9f, 2.3f, .9f), skin, false, giant).transform;
         hand = Prim(PrimitiveType.Sphere, Vector3.zero, new Vector3(2.2f, 1, 2.8f), skin, false).transform;
+        for (int i = 0; i < 4; i++)
+            Prim(PrimitiveType.Capsule, new Vector3(-.36f + i * .24f, -.1f, .62f), new Vector3(.17f, .32f, .2f), skin, false, hand).transform.localRotation = Quaternion.Euler(80, 0, 0);
         hand.gameObject.SetActive(false);
         armL.gameObject.SetActive(false); armR.gameObject.SetActive(false);
         Prim(PrimitiveType.Sphere, Vector3.zero, new Vector3(2.8f, 2.8f, 2.8f), skin, false, giant);
@@ -152,6 +231,15 @@ public class CyclopsGame : MonoBehaviour
         eyeGlow.transform.SetParent(giant, false);
         eyeGlow.transform.localPosition = new Vector3(0, .3f, -2.5f);
         eyeGlow.enabled = false;
+
+        // 거인의 얼굴: 눈썹, 귀, 코, 이빨
+        Prim(PrimitiveType.Cube, new Vector3(0, 1.02f, -1.02f), new Vector3(1.7f, .22f, .34f), skin * .55f, false, giant).transform.localRotation = Quaternion.Euler(-18, 0, 0);
+        foreach (int side in new[] { -1, 1 })
+            Prim(PrimitiveType.Sphere, new Vector3(side * 1.42f, .15f, 0), new Vector3(.4f, .9f, .55f), skin * .9f, false, giant);
+        Prim(PrimitiveType.Sphere, new Vector3(0, -.32f, -1.36f), new Vector3(.42f, .38f, .34f), skin * .92f, false, giant);
+        Prim(PrimitiveType.Cube, new Vector3(0, -.8f, -1.16f), new Vector3(1.25f, .24f, .3f), new Color(.08f, .02f, .02f), false, giant);
+        for (int i = 0; i < 4; i++)
+            Prim(PrimitiveType.Cube, new Vector3(-.45f + i * .3f, -.74f, -1.32f), new Vector3(.17f, .22f, .08f), new Color(.8f, .74f, .55f), false, giant);
 
         beam = new GameObject("EyeBeam").AddComponent<Light>();
         beam.type = LightType.Spot; beam.spotAngle = 44; beam.range = 30; beam.intensity = 9;
@@ -202,6 +290,7 @@ public class CyclopsGame : MonoBehaviour
         var hb = Clip("heart", Make(.5f, (t, n) => Mathf.Sin(t * 2 * Mathf.PI * 55) * (Mathf.Exp(-t * 18) + .7f * Mathf.Exp(-Mathf.Abs(t - .22f) * 30))));
         splash = Clip("splash", Make(.5f, (t, n) => n * Mathf.Exp(-t * 7) * .7f));
         stomp = Clip("stomp", Make(.4f, (t, n) => Mathf.Sin(t * 2 * Mathf.PI * 42) * Mathf.Exp(-t * 11)));
+        bleat = Clip("bleat", Make(.9f, (t, n) => Mathf.Sin(t * 2 * Mathf.PI * (210 - t * 40)) * (.55f + .45f * Mathf.Sin(t * 2 * Mathf.PI * 19)) * Mathf.Sin(Mathf.Clamp01(t / .9f) * Mathf.PI) * .7f));
         crack = Clip("crack", Make(.15f, (t, n) => n * Mathf.Exp(-t * 40)));
         stabClip = Clip("stab", Make(1.2f, (t, n) => (n * .5f + Mathf.Sin(t * 900 * (1.3f - t))) * Mathf.Exp(-t * 2.5f) * .7f));
 
@@ -232,6 +321,8 @@ public class CyclopsGame : MonoBehaviour
         float close = goal == Goal.Stab ? Mathf.InverseLerp(5, 3, d) : 0;
         closeUp = Mathf.Lerp(closeUp, close, 1 - Mathf.Exp(-5 * Time.deltaTime));
         Quaternion rot = Quaternion.Euler(pitch, smoothYaw, 0);
+        // 눈앞까지 다가가면 주인공이 눈을 가리지 않도록 숨긴다
+        model.gameObject.SetActive(closeUp < .55f);
         Vector3 pivot = player.transform.position + Vector3.up * (hasSheep ? .1f : .75f);
         Vector3 back = rot * new Vector3(.45f * (1 - closeUp), .15f, -Mathf.Lerp(hasSheep ? 2.2f : 3.1f, .6f, closeUp));
         float dist = back.magnitude;
@@ -249,6 +340,7 @@ public class CyclopsGame : MonoBehaviour
             return;
         }
         Move();
+        SheepLife();
         Objectives();
         EyeLogic();
         Feel();

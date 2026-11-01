@@ -156,6 +156,7 @@ public class CyclopsGame : MonoBehaviour
         cam.tag = "MainCamera";
         cam.transform.SetParent(go.transform, false);
         cam.transform.localPosition = Vector3.up * .65f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
         cam.backgroundColor = Color.black; cam.fieldOfView = 72; cam.nearClipPlane = .05f;
         cam.gameObject.AddComponent<AudioListener>();
         torch = cam.gameObject.AddComponent<Light>();

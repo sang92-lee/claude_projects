@@ -22,7 +22,7 @@ public class CyclopsGame : MonoBehaviour
     Camera cam;
     Transform giant, lid, pupil, stake, sheepHeld;
     Transform[] sheep;
-    Light beam, torch;
+    Light beam, eyeGlow, torch;
     AudioSource breath, heart, sfx;
     AudioClip splash, crack, stabClip;
     Texture2D vignette, black;
@@ -54,7 +54,8 @@ public class CyclopsGame : MonoBehaviour
         if (parent) o.transform.SetParent(parent, false);
         if (parent) o.transform.localPosition = pos; else o.transform.position = pos;
         o.transform.localScale = scale;
-        o.GetComponent<Renderer>().material.color = col;
+        var r = o.GetComponent<Renderer>();
+        r.material = new Material(Resources.Load<Material>("Base")) { color = col };
         if (!solid) Destroy(o.GetComponent<Collider>());
         return o;
     }
@@ -113,7 +114,16 @@ public class CyclopsGame : MonoBehaviour
         Prim(PrimitiveType.Sphere, Vector3.zero, new Vector3(2.8f, 2.8f, 2.8f), skin, false, giant);
         Prim(PrimitiveType.Sphere, new Vector3(0, .3f, -1.1f), new Vector3(1.05f, 1.05f, .8f), new Color(.92f, .9f, .82f), false, giant);
         pupil = Prim(PrimitiveType.Sphere, new Vector3(0, .3f, -1.47f), new Vector3(.42f, .42f, .16f), new Color(.03f, .02f, .02f), false, giant).transform;
-        lid = Prim(PrimitiveType.Sphere, new Vector3(0, .3f, -1.1f), new Vector3(1.15f, 1.15f, .9f), skin * .85f, false, giant).transform;
+        Prim(PrimitiveType.Sphere, new Vector3(0, .3f, -1.44f), new Vector3(.72f, .72f, .2f), new Color(.75f, .32f, .05f), false, giant);
+        lid = Prim(PrimitiveType.Sphere, new Vector3(0, .3f, -1.1f), new Vector3(1.15f, 1.15f, .98f), skin * .85f, false, giant).transform;
+
+        // 눈은 빛을 내뿜으므로 눈 자체도 밝게 비춘다
+        eyeGlow = new GameObject("EyeGlow").AddComponent<Light>();
+        eyeGlow.type = LightType.Point; eyeGlow.range = 4; eyeGlow.intensity = 4;
+        eyeGlow.color = new Color(1, .8f, .55f);
+        eyeGlow.transform.SetParent(giant, false);
+        eyeGlow.transform.localPosition = new Vector3(0, .3f, -2.5f);
+        eyeGlow.enabled = false;
 
         beam = new GameObject("EyeBeam").AddComponent<Light>();
         beam.type = LightType.Spot; beam.spotAngle = 30; beam.range = 30; beam.intensity = 9;
@@ -285,7 +295,7 @@ public class CyclopsGame : MonoBehaviour
         stake.localRotation = Quaternion.Euler(90, 0, 0);
         giant.position = GuardPos;
         giant.rotation = Quaternion.Euler(-70, 0, 0);
-        beam.enabled = false;
+        beam.enabled = eyeGlow.enabled = false;
     }
 
     void EyeLogic()
@@ -302,7 +312,7 @@ public class CyclopsGame : MonoBehaviour
         else if (eye == Eye.Open && eyeTimer <= 0) { eye = Eye.Closed; eyeTimer = Random.Range(7f, 12f); seen = 0; }
 
         lid.gameObject.SetActive(eye != Eye.Open);
-        beam.enabled = eye == Eye.Open;
+        beam.enabled = eyeGlow.enabled = eye == Eye.Open;
         // 숨소리가 끊기면 곧 눈이 뜨인다는 신호
         breath.volume = Mathf.MoveTowards(breath.volume, eye == Eye.Closed ? 1 : 0, Time.deltaTime * 3);
         if (eye != Eye.Open) return;

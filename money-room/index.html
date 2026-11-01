@@ -132,8 +132,8 @@ function think(i){const f=FOOD[i];if(!f.c)return eat(i);const n=live().length,no
  yes.onclick=()=>{buy(P[0],f);cart.push(f.c);room()};no.onclick=room}
 function buy(p,f){prize=Math.max(0,prize-f.c);p.hp=Math.min(100,p.hp+f.h)}
 function eat(){log=[];const me=P[0],spent=cart.map(c=>[me,c]);cart=[];
-  live().slice(1).forEach(p=>{const k=p.hp<35?(p.hp<20||Math.random()<p.greed?2:1):(Math.random()<p.greed*.3?2:0);
-    if(p.hp<25&&Math.random()<p.greed){buy(p,FOOD[3]);spent.push([p,2000])}else if(k){buy(p,FOOD[k]);spent.push([p,FOOD[k].c])}});
+  live().slice(1).forEach(p=>{let n=p.hp<35?2:Math.random()<.45+p.greed?1:0;if(Math.random()<p.greed*.4)n++;
+    while(n-->0){const x=Math.random(),k=x<.04+p.greed*.1?3:x<.4?2:1;buy(p,FOOD[k]);spent.push([p,FOOD[k].c])}});
   // 아침 단서: 진짜일 수도, 누명일 수도 있다
   spent.filter(x=>x[1]>=600).forEach(([p,c])=>{if(Math.random()<(c>=2000?.55:.25)){p.hate+=c>=2000?3:1;log.push(`${p.i?p.n:'내 방'}${c>=2000?'에서 치킨 냄새가 났다는 말이 돕니다.':'에서 밤에 소리가 났다는 말이 돕니다.'}`)}});
   if(spent.length&&Math.random()<.3){const q=live()[R(live().length)];if(!spent.some(x=>x[0]==q)){q.hate+=1;log.push(`${q.i?q.n:'나'}에게 의심의 눈길이 쏠립니다. 억울할지도 모릅니다.`)}}

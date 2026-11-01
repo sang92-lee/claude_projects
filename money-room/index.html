@@ -118,19 +118,20 @@ function home(){$.innerHTML=`<h1>방 안의 8명,<br>상금 4억 8천만원</h1>
 <div class="menu" style="grid-template-columns:1fr"><button class="main" id="go">방에 들어가기</button><p class="sub" style="text-align:center">가상의 돈으로 하는 게임입니다${best()?` · 최고 ${man(best())}`:''}</p></div>`;go.onclick=start}
 function A3reset(){if(window.stageReset)stageReset()}
 function best(){try{return +localStorage.getItem('room')||0}catch(e){return 0}}
-function start(){A3reset();p0=START;P=NAMES.map((n,i)=>({i,n,hp:70,hate:0,like:0,on:true,greed:Math.random()*.5}));const m=[0,1,2,3,4,5].sort(()=>Math.random()-.5);P.slice(1).forEach((p,k)=>p.mind=m[k%6]);stash=0;voted=[];prize=START;p0=START;P.forEach(p=>p.f='평온');day=1;log=['첫날입니다. 다들 서로 눈치만 봅니다.'];draw()}
+function start(){A3reset();p0=START;cart=[];P=NAMES.map((n,i)=>({i,n,hp:70,hate:0,like:0,on:true,greed:Math.random()*.5}));const m=[0,1,2,3,4,5].sort(()=>Math.random()-.5);P.slice(1).forEach((p,k)=>p.mind=m[k%6]);stash=0;voted=[];prize=START;p0=START;P.forEach(p=>p.f='평온');day=1;log=['첫날입니다. 다들 서로 눈치만 봅니다.'];draw()}
 function draw(){window.quiet=false;window.stagePhase&&stagePhase('');const lost=p0-prize;
   if(lost>=1500&&window.stageBuzz)setTimeout(stageBuzz,500);
   $.innerHTML=`<div class="prize"><span class="sub">${day}일째 아침</span><b>${man(prize)}</b>${lost>0?`<span class="loss">간밤에 -${man(lost)}</span>`:''}</div>${grid()}<div class="log">${(day==1?['첫날입니다. 다들 서로 눈치만 봅니다.']:[lost?`간밤에 ${man(lost)}이 사라졌습니다. 누가 썼을까요?`:'간밤엔 아무도 돈을 쓰지 않았습니다.',...log]).join('<br>')}</div><div class="menu" style="grid-template-columns:1fr"><button class="main" id="dayGo">하루 보내기</button></div>`;
   dayGo.onclick=()=>{log=[];act()}}
-function room(){window.quiet=true;const me=P[0];$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤 · 내 방</span><b>${man(prize)}</b></div><div class="log">문을 닫았습니다. 여기서 사는 건 아무도 못 봅니다.<br>하지만 아침이면 줄어든 금액은 모두가 알게 됩니다.</div><p style="font-weight:700">오늘 밤 뭘 살까? 내 체력 ${me.hp}</p>
-<div class="menu">${FOOD.map((f,i)=>`<button class="${f.sneak?'sneak':''}" data-f="${i}"><b>${f.n}</b><small>${f.c?man(f.c)+' · 체력 +'+f.h:'체력이 깎입니다'}</small></button>`).join('')}</div>`;
-document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>think(+b.dataset.f))}
+let cart=[];
+function room(){window.quiet=true;const me=P[0];if(!cart.length)p0=prize;$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤 · 내 방</span><b>${man(prize)}</b></div><div class="log">문을 닫았습니다. 여기서 사는 건 아무도 못 봅니다.<br>하지만 아침이면 줄어든 금액은 모두가 알게 됩니다.</div><p style="font-weight:700">오늘 밤 뭘 살까? 체력 ${me.hp}${cart.length?` · 지금까지 ${man(cart.reduce((a,c)=>a+c,0))}`:''}</p>
+<div class="menu">${FOOD.map((f,i)=>i?`<button class="${f.sneak?'sneak':''}" data-f="${i}"><b>${f.n}</b><small>${man(f.c)} · 체력 +${f.h}</small></button>`:'').join('')}<button class="main" id="sleep" style="grid-column:1/-1">${cart.length?'이제 잠자기':'아무것도 안 사고 잠자기'}</button></div>`;
+document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>think(+b.dataset.f));sleep.onclick=()=>eat(0)}
 function think(i){const f=FOOD[i];if(!f.c)return eat(i);const n=live().length,now=Math.floor(prize/n),aft=Math.floor(Math.max(0,prize-f.c)/n),hun=live().filter(p=>p.i&&p.hp<35).length,box=document.querySelector('.menu');
  box.outerHTML=`<div class="modal"><b>${f.n}, 정말 살까요?</b><p style="margin-top:6px">전체 상금 <b>-${man(f.c)}</b> · 내 몫 ${man(now)} → <b>${man(aft)}</b></p><p class="sub">${f.c>=2000?'냄새로 들킬 가능성이 큽니다.':f.c>=600?'소문이 날 수 있습니다.':'조용히 넘어갈 수 있습니다.'}${hun?` 배고픈 사람이 ${hun}명 지켜봅니다.`:''}</p><div class="two"><button class="ghost" id="no">참는다</button><button class="ok" id="yes">그래도 산다</button></div></div>`;
- yes.onclick=()=>eat(i);no.onclick=room}
+ yes.onclick=()=>{buy(P[0],f);cart.push(f.c);room()};no.onclick=room}
 function buy(p,f){prize=Math.max(0,prize-f.c);p.hp=Math.min(100,p.hp+f.h)}
-function eat(i){log=[];p0=prize;const me=P[0],f=FOOD[i],spent=[];buy(me,f);if(f.c)spent.push([me,f.c]);
+function eat(){log=[];const me=P[0],spent=cart.map(c=>[me,c]);cart=[];
   live().slice(1).forEach(p=>{const k=p.hp<35?(p.hp<20||Math.random()<p.greed?2:1):(Math.random()<p.greed*.3?2:0);
     if(p.hp<25&&Math.random()<p.greed){buy(p,FOOD[3]);spent.push([p,2000])}else if(k){buy(p,FOOD[k]);spent.push([p,FOOD[k].c])}});
   // 아침 단서: 진짜일 수도, 누명일 수도 있다

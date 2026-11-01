@@ -8,7 +8,7 @@ public class CyclopsGame : MonoBehaviour
     public enum Eye { Closed, Warning, Open }
     public enum Goal { Stake, Stab, Sheep, Done, Caught }
 
-    const float WalkSpeed = 1.7f, SheepSpeed = 1.0f, ReachDist = 3f;
+    const float RunSpeed = 3f, WalkSpeed = 1.7f, SheepSpeed = 1.0f, ReachDist = 3f;
     const float StandHeight = 6.2f, RoamSpeed = 1.6f, RushSpeed = 4f, StumbleTime = 2.5f;
     static readonly Vector3 HeadPos = new Vector3(0, 1.4f, 2);
     static readonly Vector3 GatePos = new Vector3(0, 0, 15);
@@ -33,7 +33,14 @@ public class CyclopsGame : MonoBehaviour
     Vector3[] bones = { new Vector3(1, 0, -13), new Vector3(-8, 0, -6), new Vector3(9, 0, -5), new Vector3(-2, 0, -3), new Vector3(3, 0, 7), new Vector3(-7, 0, 8), new Vector3(8, 0, 13) };
     bool[] boneUsed;
     float yaw, pitch, eyeTimer = 5, sweepBase, seen, heartT, bob, breathT, giantAlert, stumbleT, stompT, armPhase, curSpeed, smoothYaw, stepT, grip = 1, handTimer = 3, msgT;
-    bool scared, wasInPuddle, moving, canStab, testing;
+    bool scared, wasInPuddle, moving, running, canStab, testing;
+    int stickId = -1;
+    Vector2 stick, stickOrigin;
+    Vector3 curV;
+    Texture2D dot;
+    Transform model;
+    float modelYaw, closeUp, camDist = 3;
+    float noise;
     int handState;
     string msg = "";
     Transform nearSheep, hand;
@@ -49,8 +56,16 @@ public class CyclopsGame : MonoBehaviour
         BuildAudio();
         vignette = MakeVignette();
         black = Texture2D.whiteTexture;
+        dot = new Texture2D(48, 48, TextureFormat.RGBA32, false);
+        for (int y = 0; y < 48; y++)
+            for (int x = 0; x < 48; x++)
+                dot.SetPixel(x, y, new Color(1, 1, 1, Mathf.Clamp01(23.5f - new Vector2(x - 23.5f, y - 23.5f).magnitude)));
+        dot.Apply();
         if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-autotest") >= 0)
+        {
+            Application.runInBackground = true;
             StartCoroutine(AutoTest());
+        }
     }
 
     GameObject Prim(PrimitiveType t, Vector3 pos, Vector3 scale, Color col, bool solid = true, Transform parent = null)
@@ -139,7 +154,7 @@ public class CyclopsGame : MonoBehaviour
         eyeGlow.enabled = false;
 
         beam = new GameObject("EyeBeam").AddComponent<Light>();
-        beam.type = LightType.Spot; beam.spotAngle = 30; beam.range = 30; beam.intensity = 9;
+        beam.type = LightType.Spot; beam.spotAngle = 44; beam.range = 30; beam.intensity = 9;
         beam.color = new Color(1, .85f, .55f);
         beam.transform.SetParent(giant, false);
         beam.transform.localPosition = new Vector3(0, .3f, -1.5f);
@@ -154,14 +169,20 @@ public class CyclopsGame : MonoBehaviour
         player.height = 1.7f; player.radius = .35f;
         cam = new GameObject("Camera").AddComponent<Camera>();
         cam.tag = "MainCamera";
-        cam.transform.SetParent(go.transform, false);
-        cam.transform.localPosition = Vector3.up * .65f;
         cam.clearFlags = CameraClearFlags.SolidColor;
         cam.backgroundColor = Color.black; cam.fieldOfView = 72; cam.nearClipPlane = .05f;
         cam.gameObject.AddComponent<AudioListener>();
         torch = cam.gameObject.AddComponent<Light>();
-        torch.type = LightType.Point; torch.range = 7; torch.intensity = .6f; torch.color = new Color(1, .75f, .55f);
-        yaw = smoothYaw = 35;
+        torch.type = LightType.Point; torch.range = 10; torch.intensity = .6f; torch.color = new Color(1, .75f, .55f);
+        yaw = smoothYaw = 35; pitch = 14;
+
+        // 3인칭으로 보이는 주인공
+        model = new GameObject("Hero").transform;
+        model.SetParent(go.transform, false);
+        var tunic = new Color(.62f, .23f, .14f);
+        Prim(PrimitiveType.Capsule, Vector3.zero, new Vector3(.5f, .62f, .4f), tunic, false, model);
+        Prim(PrimitiveType.Sphere, new Vector3(0, .72f, 0), new Vector3(.34f, .34f, .34f), new Color(.82f, .62f, .46f), false, model);
+        Prim(PrimitiveType.Sphere, new Vector3(0, .84f, -.03f), new Vector3(.37f, .22f, .37f), new Color(.14f, .09f, .06f), false, model);
     }
 
     void BuildAudio()
@@ -204,6 +225,22 @@ public class CyclopsGame : MonoBehaviour
         return t;
     }
 
+    // 어깨 뒤를 따라가다가 찌르기 직전에는 거인의 눈앞으로 바짝 다가간다
+    void LateUpdate()
+    {
+        float d = Vector3.Distance(player.transform.position, HeadPos);
+        float close = goal == Goal.Stab ? Mathf.InverseLerp(5, 3, d) : 0;
+        closeUp = Mathf.Lerp(closeUp, close, 1 - Mathf.Exp(-5 * Time.deltaTime));
+        Quaternion rot = Quaternion.Euler(pitch, smoothYaw, 0);
+        Vector3 pivot = player.transform.position + Vector3.up * (hasSheep ? .1f : .75f);
+        Vector3 back = rot * new Vector3(.45f * (1 - closeUp), .15f, -Mathf.Lerp(hasSheep ? 2.2f : 3.1f, .6f, closeUp));
+        float dist = back.magnitude;
+        if (Physics.SphereCast(pivot, .2f, back.normalized, out var hit, dist, ~0, QueryTriggerInteraction.Ignore))
+            dist = Mathf.Max(.3f, hit.distance);
+        camDist = Mathf.Min(dist, Mathf.Lerp(camDist, dist, 1 - Mathf.Exp(-8 * Time.deltaTime)));
+        cam.transform.SetPositionAndRotation(pivot + back.normalized * camDist, rot);
+    }
+
     void Update()
     {
         if (goal == Goal.Done || goal == Goal.Caught)
@@ -225,42 +262,58 @@ public class CyclopsGame : MonoBehaviour
         if (canStab && Input.GetMouseButtonDown(0) && StabRect.Contains(gui)) { Stab(); return; }
         if (nearSheep && Input.GetMouseButtonDown(0) && StabRect.Contains(gui)) { GripSheep(); return; }
 
-        // 왼쪽 절반을 누르면 걷고 오른쪽 절반을 끌면 둘러본다. 두 손가락을 함께 쓸 수 있다
-        bool walk = simHold || Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
+        // 왼쪽 엄지는 그 자리에 생기는 조이스틱으로 이동하고, 오른쪽 엄지는 끌어서 둘러본다
+        float stickRange = Screen.height * .08f;
         Vector2 look = Vector2.zero;
         if (Input.touchCount > 0)
         {
             foreach (var t in Input.touches)
-                if (t.position.x < Screen.width * .5f) walk = true;
+            {
+                if (t.phase == TouchPhase.Began && t.position.x < Screen.width * .5f && stickId < 0) { stickId = t.fingerId; stickOrigin = t.position; }
+                if (t.fingerId == stickId)
+                {
+                    bool over = t.phase == TouchPhase.Ended || t.phase == TouchPhase.Canceled;
+                    stick = over ? Vector2.zero : Vector2.ClampMagnitude((t.position - stickOrigin) / stickRange, 1);
+                    if (over) stickId = -1;
+                }
                 else if (t.phase == TouchPhase.Moved) look += t.deltaPosition;
+            }
         }
         else
         {
-            if (Input.GetMouseButtonDown(0)) lastMouse = Input.mousePosition;
+            if (Input.GetMouseButtonDown(0)) { lastMouse = Input.mousePosition; stickOrigin = lastMouse; stickId = lastMouse.x < Screen.width * .5f ? 0 : -1; }
             if (Input.GetMouseButton(0))
             {
-                if (lastMouse.x < Screen.width * .5f) walk = true;
+                if (stickId >= 0) stick = Vector2.ClampMagnitude(((Vector2)Input.mousePosition - stickOrigin) / stickRange, 1);
                 else look = Input.mousePosition - lastMouse;
-                if (!walk) lastMouse = Input.mousePosition;
+                lastMouse = Input.mousePosition;
             }
+            else { stick = Vector2.zero; stickId = -1; }
         }
+        Vector2 keys = new Vector2((Input.GetKey(KeyCode.D) ? 1 : 0) - (Input.GetKey(KeyCode.A) ? 1 : 0), (Input.GetKey(KeyCode.W) ? 1 : 0) - (Input.GetKey(KeyCode.S) ? 1 : 0));
+        Vector2 input = simHold ? new Vector2(0, .6f) : keys != Vector2.zero ? keys * (Input.GetKey(KeyCode.LeftShift) ? 1 : .6f) : stick;
+        bool walk = input.magnitude > .12f;
+        running = !hasSheep && input.magnitude > .8f;
         float scale = 900f / Mathf.Max(Screen.height, 1);
         yaw += look.x * .22f * scale;
         pitch = Mathf.Clamp(pitch - look.y * .16f * scale, -50, 50);
-        // 가볍게 출발하고 손을 떼면 바로 멈춘다
-        float wanted = walk ? (hasSheep ? SheepSpeed : WalkSpeed) : 0;
-        curSpeed = Mathf.MoveTowards(curSpeed, wanted, Time.deltaTime * (walk ? 6 : 14));
+        // 가볍게 출발하고 손을 떼면 바로 멈춘다. 크게 밀면 달리지만 소리가 난다
+        float wanted = !walk ? 0 : hasSheep ? SheepSpeed : running ? RunSpeed : WalkSpeed;
+        Vector3 wish = (player.transform.forward * input.y + player.transform.right * input.x).normalized * wanted;
+        curV = Vector3.MoveTowards(curV, wish, Time.deltaTime * (walk ? 9 : 18));
+        curSpeed = curV.magnitude;
         moving = curSpeed > .25f;
         smoothYaw = Mathf.LerpAngle(smoothYaw, yaw, 1 - Mathf.Exp(-18 * Time.deltaTime));
-        cam.transform.localRotation = Quaternion.Euler(pitch, 0, Mathf.Clamp(Mathf.DeltaAngle(yaw, smoothYaw) * .2f, -4, 4));
-        player.transform.rotation = Quaternion.Euler(0, smoothYaw, 0);
-        Vector3 v = player.transform.forward * curSpeed;
+                player.transform.rotation = Quaternion.Euler(0, smoothYaw, 0);
+        Vector3 v = curV;
         player.Move((v + Vector3.down * 3) * Time.deltaTime);
         bob += Time.deltaTime * curSpeed * 4.2f;
         stepT += Time.deltaTime * curSpeed;
         if (stepT > .85f) { stepT = 0; sfx.PlayOneShot(crack, .07f); }
-        float camY = hasSheep ? -.55f : .65f;
-        cam.transform.localPosition = Vector3.up * (camY + Mathf.Sin(bob) * .025f);
+        // 주인공은 움직이는 쪽을 보고, 양에 매달리면 배 밑에 눕는다
+        if (curSpeed > .2f) modelYaw = Mathf.MoveTowardsAngle(modelYaw, Quaternion.LookRotation(curV).eulerAngles.y, 540 * Time.deltaTime);
+        model.rotation = Quaternion.Euler(hasSheep ? -90 : 0, hasSheep ? smoothYaw : modelYaw, 0);
+        model.localPosition = Vector3.up * (hasSheep ? -.52f : Mathf.Abs(Mathf.Sin(bob)) * .05f);
         if (sheepHeld)
         {
             sheepHeld.position = player.transform.position + Vector3.down * .72f + player.transform.forward * .1f;
@@ -270,6 +323,11 @@ public class CyclopsGame : MonoBehaviour
         // 소리: 물웅덩이와 뼈다귀. 양 밑에 숨어 있으면 들키지 않는다
         if (hasSheep) return;
         var flat = player.transform.position; flat.y = 0;
+        // 달리면 소음이 쌓이고, 잠든 거인 곁에서는 걷는 소리도 들린다
+        float toGiant = Vector3.Distance(flat, new Vector3(giant.position.x, 0, giant.position.z));
+        noise += Time.deltaTime * ((running && moving ? .55f : 0) + (moving && toGiant < 7 ? .16f : 0) - .14f);
+        noise = Mathf.Clamp01(noise);
+        if (noise >= 1) { noise = .35f; Alert(flat); }
         bool inPuddle = false;
         foreach (var p in puddles) inPuddle |= Vector3.Distance(flat, p) < 1.3f;
         if (inPuddle && !wasInPuddle && moving) { sfx.PlayOneShot(splash); Alert(flat); }
@@ -292,10 +350,10 @@ public class CyclopsGame : MonoBehaviour
         if (goal == Goal.Stake && Vector3.Distance(pos, StakePos) < 1.6f)
         {
             goal = Goal.Stab;
-            stake.SetParent(cam.transform, false);
-            stake.localPosition = new Vector3(.32f, -.3f, .6f);
-            stake.localRotation = Quaternion.Euler(70, 0, 0);
-            stake.localScale = new Vector3(.05f, .4f, .05f);
+            stake.SetParent(model, false);
+            stake.localPosition = new Vector3(.33f, .1f, .25f);
+            stake.localRotation = Quaternion.Euler(75, 0, 0);
+            stake.localScale = new Vector3(.07f, .55f, .07f);
         }
         canStab = goal == Goal.Stab && eye == Eye.Closed && scared && Vector3.Distance(pos, HeadPos) < ReachDist;
         // 처음 얼굴 앞에 서는 순간 눈이 번쩍 뜨인다
@@ -425,7 +483,7 @@ public class CyclopsGame : MonoBehaviour
             sweepBase = Mathf.Atan2(d.x, -d.z) * Mathf.Rad2Deg + Random.Range(-35f, 35f);
         }
         else if (eye == Eye.Warning && eyeTimer <= 0) { eye = Eye.Open; eyeTimer = 5; }
-        else if (eye == Eye.Open && eyeTimer <= 0) { eye = Eye.Closed; eyeTimer = Random.Range(7f, 12f); seen = 0; }
+        else if (eye == Eye.Open && eyeTimer <= 0) { eye = Eye.Closed; eyeTimer = Random.Range(4f, 7f); seen = 0; }
 
         lid.gameObject.SetActive(eye != Eye.Open);
         beam.enabled = eyeGlow.enabled = eye == Eye.Open;
@@ -433,17 +491,22 @@ public class CyclopsGame : MonoBehaviour
         breath.volume = Mathf.MoveTowards(breath.volume, eye == Eye.Closed ? 1 : 0, Time.deltaTime * 3);
         if (eye != Eye.Open) return;
 
-        float look = sweepBase + Mathf.Sin(Time.time * .9f) * 22;
+        // 눈빛은 플레이어 쪽으로 서서히 따라온다
+        Vector3 toMe = player.transform.position - HeadPos;
+        sweepBase = Mathf.MoveTowardsAngle(sweepBase, Mathf.Atan2(toMe.x, -toMe.z) * Mathf.Rad2Deg, 13 * Time.deltaTime);
+        float look = sweepBase + Mathf.Sin(Time.time * .9f) * 16;
         Quaternion q = Quaternion.Euler(4, 180 - look, 0);
         beam.transform.rotation = q;
         pupil.localPosition = new Vector3(Mathf.Clamp(look / 90f, -1, 1) * -.3f, .3f, -1.47f);
 
-        Vector3 from = beam.transform.position, to = cam.transform.position - from;
+        Vector3 from = beam.transform.position, to = player.transform.position + Vector3.up * .5f - from;
         bool inCone = Vector3.Angle(q * Vector3.forward, to) < beam.spotAngle * .5f;
         bool clear = !Physics.Raycast(from, to.normalized, out var hit, to.magnitude) || hit.collider == player;
-        // 빛 속에서 움직이면 들킨다. 멈추면 살 수 있다
-        seen = inCone && clear && moving ? seen + Time.deltaTime : 0;
-        if (seen > .3f) Catch();
+        // 빛 속에서 움직이면 금방 들킨다. 멈춰도 가까우면 천천히 들킨다
+        bool lit = inCone && clear;
+        float rate = !lit ? -1 : moving ? 2.2f : to.magnitude < 9 ? .7f : 0;
+        seen = Mathf.Clamp01(seen + rate * Time.deltaTime);
+        if (seen >= 1) Catch();
     }
 
     void Catch() { if (testing) return; goal = Goal.Caught; breath.Stop(); }
@@ -482,8 +545,29 @@ public class CyclopsGame : MonoBehaviour
         if (goal <= Goal.Sheep) GUI.Label(new Rect(0, h * .05f, w, h * .06f), line, style);
         if (goal == Goal.Stake && Time.timeSinceLevelLoad < 10)
         {
-            GUI.Label(new Rect(0, h * .82f, w * .5f, h * .1f), "왼쪽 누르기\n걷기", style);
-            GUI.Label(new Rect(w * .5f, h * .82f, w * .5f, h * .1f), "오른쪽 끌기\n둘러보기", style);
+            GUI.Label(new Rect(0, h * .8f, w * .5f, h * .13f), "왼쪽 밀기: 이동\n크게 밀면 달리기", style);
+            GUI.Label(new Rect(w * .5f, h * .8f, w * .5f, h * .13f), "오른쪽 끌기\n둘러보기", style);
+        }
+        // 눈빛에 들키는 정도는 화면 붉기, 소음은 위쪽 막대로 보여 준다
+        if (seen > 0 && goal <= Goal.Sheep)
+        {
+            GUI.color = new Color(.7f, .05f, .02f, seen * .55f);
+            GUI.DrawTexture(new Rect(0, 0, w, h), black);
+        }
+        if (noise > 0 && goal <= Goal.Sheep && !hasSheep)
+        {
+            GUI.color = noise > .7f ? new Color(.9f, .2f, .15f) : new Color(.93f, .85f, .6f);
+            GUI.DrawTexture(new Rect(w * .2f, h * .035f, w * .6f * noise, h * .008f), black);
+        }
+        GUI.color = Color.white;
+        if (stickId >= 0)
+        {
+            float big = h * .16f, small = h * .07f, cx = stickOrigin.x, cy = h - stickOrigin.y;
+            GUI.color = new Color(1, 1, 1, .16f);
+            GUI.DrawTexture(new Rect(cx - big / 2, cy - big / 2, big, big), dot);
+            GUI.color = new Color(1, 1, 1, .4f);
+            GUI.DrawTexture(new Rect(cx + stick.x * big / 2 - small / 2, cy - stick.y * big / 2 - small / 2, small, small), dot);
+            GUI.color = Color.white;
         }
         msgT -= Time.deltaTime;
         if (msgT > 0 && goal <= Goal.Sheep) GUI.Label(new Rect(0, h * .13f, w, h * .12f), msg, style);

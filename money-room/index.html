@@ -25,6 +25,14 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 .fl{position:absolute;color:#fff;background:#d9362bdd;font-weight:800;font-size:17px;padding:2px 8px;border-radius:8px;transform:translate(-50%,0);white-space:nowrap;pointer-events:none;animation:fl 2.2s forwards;z-index:9}@keyframes fl{to{margin-top:-46px;opacity:0}}.loss{color:#fff;background:#d9362b;border-radius:8px;padding:3px 8px;font-weight:800;font-size:18px;display:inline-block;margin-top:3px}
 .modal{background:#3a2024;border:2px solid #ef6a5a;border-radius:16px;padding:14px}.modal .two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.modal .ghost{background:#2b2f40;border-radius:12px;padding:12px}.modal .ok{background:#ef6a5a;border-radius:12px;padding:12px;font-weight:700}
 #hud{position:absolute;top:6px;left:50%;transform:translateX(-50%);background:#000a;border-radius:10px;padding:3px 12px;font-weight:800;color:#f2b632;white-space:nowrap;z-index:8;font-size:17px}#hud small{color:#fff;font-size:12px;font-weight:600}
+html,body{height:100dvh;overflow:hidden}#stage{height:30dvh}
+#app{margin-top:30dvh;height:70dvh;min-height:0;padding:5px 12px calc(6px + env(safe-area-inset-bottom));gap:5px;overflow:hidden}
+.prize{padding:2px 8px;border-radius:10px;flex:none}.prize .sub{font-size:12px}.prize b{display:inline;font-size:16px;margin-left:6px}.loss{font-size:13px;padding:0 6px;margin:0 0 0 6px}
+.ppl{gap:3px;flex:none}.p{padding:2px 1px;font-size:11px;line-height:1.15;border-radius:8px}.p svg{width:20px;height:20px}.hp{height:3px;margin:1px 3px}.hate{min-height:0;font-size:10px}
+.log{flex:1 1 0;min-height:30px;overflow:auto;font-size:13px;padding:4px 8px}
+.menu{margin-top:0;gap:4px;flex:none}.menu button{padding:5px 8px;border-radius:10px}.menu b{font-size:14px}.menu small{font-size:11px;line-height:1.2;display:block}
+.main{padding:10px}.modal{padding:7px 10px;font-size:14px;flex:none}.modal .two{margin-top:5px}.modal .ghost,.modal .ok{padding:8px}.big{font-size:28px;line-height:1.1}
+#app>p{font-size:14px}h1{font-size:20px;margin:0}
 </style></head><body><div id="stage"><div id="hud"></div></div><div id="app"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>

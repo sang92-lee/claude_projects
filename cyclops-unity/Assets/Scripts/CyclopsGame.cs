@@ -206,19 +206,32 @@ public class CyclopsGame : MonoBehaviour
 
     void Move()
     {
-        bool down = Input.GetMouseButton(0);
         Vector2 gui = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
         if (canStab && Input.GetMouseButtonDown(0) && StabRect.Contains(gui)) { Stab(); return; }
-        if (Input.GetMouseButtonDown(0)) lastMouse = Input.mousePosition;
-        if (down)
+
+        // 왼쪽 절반을 누르면 걷고 오른쪽 절반을 끌면 둘러본다. 두 손가락을 함께 쓸 수 있다
+        bool walk = simHold || Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
+        Vector2 look = Vector2.zero;
+        if (Input.touchCount > 0)
         {
-            Vector3 d = Input.mousePosition - lastMouse;
-            lastMouse = Input.mousePosition;
-            float scale = 900f / Mathf.Max(Screen.height, 1);
-            yaw += d.x * .22f * scale;
-            pitch = Mathf.Clamp(pitch - d.y * .16f * scale, -50, 50);
+            foreach (var t in Input.touches)
+                if (t.position.x < Screen.width * .5f) walk = true;
+                else if (t.phase == TouchPhase.Moved) look += t.deltaPosition;
         }
-        moving = down || simHold;
+        else
+        {
+            if (Input.GetMouseButtonDown(0)) lastMouse = Input.mousePosition;
+            if (Input.GetMouseButton(0))
+            {
+                if (lastMouse.x < Screen.width * .5f) walk = true;
+                else look = Input.mousePosition - lastMouse;
+                if (!walk) lastMouse = Input.mousePosition;
+            }
+        }
+        float scale = 900f / Mathf.Max(Screen.height, 1);
+        yaw += look.x * .22f * scale;
+        pitch = Mathf.Clamp(pitch - look.y * .16f * scale, -50, 50);
+        moving = walk;
         float speed = hasSheep ? SheepSpeed : WalkSpeed;
         cam.transform.localRotation = Quaternion.Euler(pitch, 0, 0);
         player.transform.rotation = Quaternion.Euler(0, yaw, 0);
@@ -364,6 +377,11 @@ public class CyclopsGame : MonoBehaviour
             _ => ""
         };
         if (goal <= Goal.Sheep) GUI.Label(new Rect(0, h * .05f, w, h * .06f), line, style);
+        if (goal == Goal.Stake && Time.timeSinceLevelLoad < 10)
+        {
+            GUI.Label(new Rect(0, h * .82f, w * .5f, h * .1f), "왼쪽 누르기\n걷기", style);
+            GUI.Label(new Rect(w * .5f, h * .82f, w * .5f, h * .1f), "오른쪽 끌기\n둘러보기", style);
+        }
         if (canStab && GUI.Button(StabRect, "눈을 찌른다", style)) Stab();
         if (goal >= Goal.Done)
         {

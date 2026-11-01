@@ -13,7 +13,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 .prize{text-align:center;background:var(--card);border-radius:16px;padding:10px}.prize b{display:block;font-size:32px;color:var(--pri);line-height:1.2}
 .ppl{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .p{background:var(--card);border:2px solid transparent;border-radius:12px;padding:6px 3px;text-align:center;font-size:12px;width:100%}
-.p.me{border-color:var(--pri)}.p.out{opacity:.3}.p svg{display:block;margin:auto}
+.p.me{border-color:var(--pri)}.p.al{border-color:var(--good)}.p.out{opacity:.3}.p svg{display:block;margin:auto}
 .hp{height:6px;background:#191b26;border-radius:3px;overflow:hidden;margin:3px 4px}.hp i{display:block;height:100%;background:var(--good)}
 .hate{color:var(--bad);min-height:17px;font-size:11px}
 .log{background:var(--card);border-radius:12px;padding:9px 12px;font-size:14px;min-height:74px}
@@ -32,7 +32,7 @@ const FC={화남:'#ef6a5a',굶주림:'#e8a03b',불안:'#b79be0',고마움:'#58c0
 const $=document.getElementById('app'),fast=location.search.includes('fast');
 const R=n=>Math.floor(Math.random()*n);
 let P,prize,day,log,stash,voted,p0=START;
-function feelAll(){const lost=p0-prize;P.forEach(p=>{if(!p.on)return;
+function feelAll(){const lost=p0-prize;P.forEach(p=>{if(!p.on||!p.ally)return;p.trust-=4+(P[0].hate>=4?6:0)+(lost>=2000?4:0);if(p.trust<=30){p.ally=false;p.mad=day;log.push(`${p.n}가 더 이상 나를 믿지 않습니다. 동맹이 끊겼습니다.`)}});P.forEach(p=>{if(!p.on)return;
   if(p.hp<30)p.f='굶주림';
   else if(!p.i){p.f=p.hate>=4?'위축':'평온';return}
   else if(p.mad==day||voted[voted.length-1]==p.i)p.f='화남';
@@ -42,7 +42,7 @@ function feelAll(){const lost=p0-prize;P.forEach(p=>{if(!p.on)return;
 const man=v=>v>=10000?(v/10000).toFixed(v%10000?1:0)+'억원':v.toLocaleString()+'만원';
 const live=()=>P.filter(p=>p.on);
 function face(c,sad,f){return `<svg width="34" height="34" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="${c}"/><circle cx="11" cy="14" r="2" fill="#222"/><circle cx="21" cy="14" r="2" fill="#222"/>${f=='화남'?'<path d="M8 10l6 2M24 10l-6 2" stroke="#222" stroke-width="2"/>':''}<path d="M11 ${sad?23:20}q5 ${sad?-5:5} 10 0" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`}
-function grid(tap){return `<div class="ppl">${P.map(p=>{const t=tap&&p.on&&p.i&&(!tap.length||tap.includes(p))?`data-v="${p.i}"`:'';return `<button class="p ${p.i?'':'me'} ${p.on?'':'out'}" ${t}>${face(COL[p.i],['굶주림','화남','불안','위축'].includes(p.f),p.f)}${p.n}<div style="font-weight:700;color:${FC[p.f]||'#a7a8b5'}">${p.on?p.f:'퇴장'}</div><div class="hp"><i style="width:${p.hp}%"></i></div><div class="hate">${p.hate?'미움 '+p.hate:''}${p.like>0?' 호감 '+p.like:''}${p.on&&p.ally&&day-p.ally<=3?'<b style="color:#58c08b"> 동맹</b>':''}</div></button>`}).join('')}</div>`}
+function grid(tap){return `<div class="ppl">${P.map(p=>{const t=tap&&p.on&&p.i&&(!tap.length||tap.includes(p))?`data-v="${p.i}"`:'';return `<button class="p ${p.on&&p.ally?'al':''} ${p.i?'':'me'} ${p.on?'':'out'}" ${t}>${face(COL[p.i],['굶주림','화남','불안','위축'].includes(p.f),p.f)}${p.n}<div style="font-weight:700;color:${FC[p.f]||'#a7a8b5'}">${p.on?p.f:'퇴장'}</div><div class="hp"><i style="width:${p.hp}%"></i></div><div class="hate">${p.hate?'미움 '+p.hate:''}${p.like>0?' 호감 '+p.like:''}${p.on&&p.ally?`<b style="color:#58c08b"> 동맹 신뢰${p.trust}</b>`:''}</div></button>`}).join('')}</div>`}
 function home(){$.innerHTML=`<h1>방 안의 8명,<br>상금 4억 8천만원</h1><p class="sub">14일을 버티면 남은 상금을 살아남은 사람끼리 나눕니다.<br>그런데 물 한 병도 상금에서 빠져나가요.<br>많이 먹으면 미움받고, 3일마다 투표로 쫓겨납니다.</p>
 <div class="ppl" style="margin-top:10px">${COL.map((c,i)=>`<div class="p">${face(c)}${NAMES[i]}</div>`).join('')}</div>
 <div class="menu" style="grid-template-columns:1fr"><button class="main" id="go">방에 들어가기</button><p class="sub" style="text-align:center">가상의 돈으로 하는 게임입니다${best()?` · 최고 ${man(best())}`:''}</p></div>`;go.onclick=start}
@@ -71,27 +71,31 @@ function target(a){$.innerHTML=`<p style="font-weight:700;margin-top:14px">${a.n
 function doAct(a,t){const me=P[0],c=Math.random();log=[];
  if(a.k=='rest')me.hp=Math.min(100,me.hp+6);
  if(a.k=='sorry')me.hate=Math.max(0,me.hate-2);
- if(a.k=='gift'){prize=Math.max(0,prize-150);t.hp=Math.min(100,t.hp+8);t.like+=t.mind==2?3:2;t.thx=day;log.push(`${t.n}가 고마워합니다.`)}
+ if(a.k=='gift'){prize=Math.max(0,prize-150);t.hp=Math.min(100,t.hp+8);t.like+=t.mind==2?3:2;t.thx=day;if(t.ally)t.trust=Math.min(100,t.trust+20);log.push(`${t.n}가 고마워합니다.`)}
  if(a.k=='gossip'){t.hate+=2;if(c<.3){t.like-=3;t.mad=day;me.hate+=2;log.push(`${t.n} 뒷담화를 들켰습니다!`)}else log.push(`${t.n}를 보는 눈길이 달라졌습니다.`)}
- if(a.k=='ally'){const ok=c<.35+t.like*.15+(t.mind==5?.2:0);if(ok){t.ally=day;t.thx=day;log.push(`${t.n}가 다음 투표를 약속했습니다. 믿어도 될까요?`)}else log.push(`${t.n}가 고개를 돌립니다.`)}
+ if(a.k=='ally'){const ok=c<.35+t.like*.15+(t.mind==5?.2:0);if(t.ally){t.trust=Math.min(100,t.trust+10);log.push(`${t.n}와 다시 손을 맞잡았습니다.`)}else if(ok){t.ally=true;t.trust=70;t.thx=day;log.push(`${t.n}와 동맹! 이제 내가 찍는 사람을 함께 찍습니다.`)}else log.push(`${t.n}가 고개를 돌립니다.`)}
  if(a.k=='steal'){prize=Math.max(0,prize-1000);stash+=1000;if(c<.3){me.hate+=5;stash-=1000;log.push('빼돌리다 들켜 돈을 뺏겼습니다! 방이 뒤집혔습니다.')}else log.push('아무도 모르게 주머니가 두둑해졌습니다.')}
  feelAll();after()}
 function next(){day++;if(day>DAYS)return end();draw()}
-function vote(){$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤 · 한 명을 내보냅니다</span><b>${man(prize)}</b></div><div class="log">${log.join('<br>')||'조용한 하루였습니다.'}</div><p style="font-weight:700">누구를 내보낼까요?</p>${grid(true)}`;
+function vote(){$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤 · 한 명을 내보냅니다</span><b>${man(prize)}</b></div><div class="log">${log.join('<br>')||'조용한 하루였습니다.'}</div><p style="font-weight:700">누구를 내보낼까요?${P.some(p=>p.on&&p.ally)?` 동맹 ${P.filter(p=>p.on&&p.ally).length}명이 따라 찍습니다`:''}</p>${grid(true)}`;
   document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>tally(+b.dataset.v))}
 function revote(pool,top){$.innerHTML=`<div class="prize"><span class="sub">${day}일째 밤 · 동점 재투표</span><b>${top}표 동점</b></div><div class="log">${pool.map(p=>p.n).join(', ')} 중에서만 다시 뽑습니다.${pool.includes(P[0])?'<br>나도 대상입니다!':''}</div><p style="font-weight:700">재투표: 누구를 내보낼까요?</p>${grid(pool)}`;
   document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>tally(+b.dataset.v,pool))}
 function tally(mine,pool){const c={},L=live(),me=P[0],by=[];c[mine]=1;voted.push(mine);const anger=1+(START-prize)/START;
-  [...L.slice(1)].sort(()=>Math.random()-.5).forEach(v=>{let top=null,bs=-99;(pool||L).filter(p=>p!=v).forEach(p=>{
+  [...L.slice(1)].sort(()=>Math.random()-.5).forEach(v=>{let top=null,bs=-99;const tgt=pool?pool.includes(P[mine]):true;
+    if(v.ally&&mine==v.i){v.ally=false;v.mad=day;log.push(`${v.n}가 나의 배신에 동맹을 끊었습니다.`)}
+    else if(v.ally&&Math.random()<(100-v.trust)/250+(v.mind==5?.1:0)){v.ally=false;v.mad=day;v.stab=1}
+    else if(v.ally&&tgt){c[mine]++;return}
+    if(!v.ally&&v.stab){v.stab=0;c[0]=(c[0]||0)+1;by.push(v.n+'(동맹 배신!)');return}(pool||L).filter(p=>p!=v).forEach(p=>{
     let s=p.hate*(v.mind==3?anger*1.5:1)+Math.random()*2.5+(v.hp<30?Math.random()*2:0);
     if(v.f=='불안')s+=p.hate*.5;if(v.f=='의심')s+=Math.random()*2;if(!p.i&&v.f=='화남')s+=2;if(!p.i&&v.f=='고마움')s-=2;
     if(v.mind==1)s+=(c[p.i]||0)*1.5;
     if(v.mind==4&&p.hp>60)s+=2;
     if(v.mind==5)s+=p.hp<35?-1:p.hp/50;
-    if(!p.i){s-=v.like*(v.mind==2?1.2:.7);if(voted.includes(v.i))s+=v.mind==0?5:1;if(v.ally&&day-v.ally<=3)s-=v.mind==5&&Math.random()<.4?-3:8}
+    if(!p.i){s-=v.like*(v.mind==2?1.2:.7);if(voted.includes(v.i))s+=v.mind==0?5:1;}
     if(s>bs){bs=s;top=p}});c[top.i]=(c[top.i]||0)+1;if(!top.i)by.push(v.n)});
   const top=Math.max(...Object.values(c)),ids=Object.keys(c).filter(k=>c[k]==top);if(ids.length>1&&!pool)return revote(ids.map(k=>P[+k]),top);const out=P[+ids[R(ids.length)]];
-  out.on=false;log=[`${out.n}가 ${top}표로 방에서 쫓겨났습니다.`,by.length?`나를 찍은 사람: ${by.join(', ')}`:'아무도 나를 찍지 않았습니다.'];
+  out.on=false;log=[...log.filter(x=>x.includes('동맹')),`${out.n}가 ${top}표로 방에서 쫓겨났습니다.`,by.length?`나를 찍은 사람: ${by.join(', ')}`:'아무도 나를 찍지 않았습니다.'];
   if(!out.i)return end(`${top}표를 받고 쫓겨났습니다`);next()}
 function end(fail){const take=(fail?0:Math.floor(prize/live().length))+stash;
   try{if(take>best())localStorage.setItem('room',take)}catch(e){}
